@@ -1,0 +1,1457 @@
+---
+title: Auffrischungskurs Statistik in R
+author:
+- name: Dr. Sascha Meyen
+  affiliation: Experimentelle Kognitionswissenschaft | Fachbereich Informatik | Universität
+    Tübingen
+date: "`r format(Sys.time(), '%Y-%m-%d-%H-%M')`"
+output:
+  html_document:
+    theme: default  # default united darkly
+    highlight: pygments
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+    smooth_scroll: no
+    code_folding: show
+  pdf_document:
+    toc: yes
+includes: \usepackage[german]{babel}
+# bibliography: ./Additional_Files/refs.bib
+link-citations: yes
+# csl: ./Additional_Files/apa.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = TRUE,
+    eval = TRUE,
+    fig.align = "center",
+    fig.width = 6, 
+    fig.height = 6)
+options(width = 55)
+```
+
+<!-- 
+########         ######## ########  ######  ########
+   ##               ##    ##       ##    ##    ##   
+   ##               ##    ##       ##          ##   
+   ##    #######    ##    ######    ######     ##   
+   ##               ##    ##             ##    ##   
+   ##               ##    ##       ##    ##    ##   
+   ##               ##    ########  ######     ##   
+ -->
+
+Eine kurze Zusammenfassung der wichtigstens Inhalte von Statistik in R von Sascha Meyen (saschameyen@gmail.com).
+
+# Hypothesentests
+
+## Zufallsvariablen
+
+Auch wenn es erstmal abstrakt wirkt, wir sind an Zufallsvariablen interessiert. Zum Beispiel wollen wir wissen, welche Gesundheitsverbesserung ein Medikament für einen neuen Patienten bringt. Die Gesundheitsverbesserung ist eine Zufallsvariable. Denn es ist nicht gewiss, welches Ergebnis es bei jedem Patienten bringt.
+
+$$
+    \text{Zufallsvariable} X
+$$
+
+Das ist konzeptionell wie ein Würfelwurf, der auch eine Zufallsvariable ist. Wir stellen uns also erstmal beispielhaft vor, das Medikament bringt eine Gesundheitsverbesserung so wie ein Würfelwurf eine Zahl wirft. 
+
+## Erwartungswert
+
+Wir wissen wie gesagt nicht, was im Einzelfall passieren wird, aber wir können berechnen, was ein in Erwartung passt: Beim Würfel ist der Erwartungswert 
+
+$$
+  E(X) = \sum_{x} f(x_i) x  = \frac{1}{6}1 + \frac{1}{6}2 + ... + \frac{1}{6}6 = 3.5 ~\text{.}
+$$
+
+Für später: Die Varianz und Standardabweichung sind
+
+\begin{align*}
+  Var(X) & = \sum_{x} f(x_i) (x - E(X))^2 = \frac{1}{6}(1-3.5)^2 + ... + \frac{1}{6} (6 - 3.5)^2 = 2.92 \text{ und }\\
+  SD(X)  & = \sqrt{Var(X)} = \sqrt{2.92} = 1.71 ~\text{.}
+\end{align*}
+
+Diesen Erwartungswert kennen wir beim Würfel aber nicht beim Medikament. Das wollen wir ja gerade herausfinden. Wir tuen das, indem wir eine Untersuchung mit Patienten anlegen, ihnen das Medikament geben und dann den Mittelwert berechnen. Wenn wir einen Würfel zum Beipspiel 30 mal werfen, bekommen wir,
+
+$$
+  \frac{1}{N} \sum_{i = 1}^N X_i = \frac{1}{30} (4 + 4 + 6 + 1 + ...) = 3.73
+$$
+
+```{r, class.source = 'fold-hide'}
+set.seed(2024-01-03)
+x <- sample(1:6, 30, replace = TRUE)
+m <- mean(x)
+```
+
+Das ist schon relativ nah am Erwartungswert, aber wie genau hängt der Mittelwert mit dem Erwartungswert zusammen?
+
+$$
+    E(X) = \sum_{x} x f(x_i) ~~~~\text{vs.}~~~~ \bar{X}_N = \frac{1}{N} \sum_{i = 1}^N X_i
+$$
+
+## Zusammenhang zum beobachtbaren Mittelwert
+
+Um einen Zusammenhang herzustellen, brauchen wir eine zentrale Annahme: Wir müssen annehmen, dass die einzelnen Beobachtungen (die Werte der einzelnen Patienten) $X_i$ alle aus dem gleichen Zufallsmechanismus stammen (z.B. alle kriegen die gleiche Menge des Medikaments) und unabhängig voneinander sind (wir ziehen Probanden zufällig und nicht nur Leute aus der gleichen Familie).
+
+Diese zentrale Annahme ist, dass die einzelnen Beobachtungen unabhängig und identisch verteilt sind (iid, independently and indentically distributed) und man schreibt $X_1, ..., X_N \overset{iid}{\sim} X$. Das ist der Fall wenn wir $N$ mal den gleichen Würfel werfen. Dann können wir mit den Rechenregeln für Zufallsvariabeln folgendes herleiten.
+
+$$
+    E(\bar{X}_N) = E\left( \frac{1}{N} \sum_{i=1}^N X_i \right) = \frac{1}{N} \sum_{i=1}^N E\left(  X_i \right) = \frac{1}{N} \sum_{i=1}^N E\left(  X \right) = E(X)
+$$
+
+$$
+    Var(\bar{X}_N) = Var\left( \frac{1}{N} \sum_{i=1}^N X_i \right) = \frac{1}{N^2} \sum_{i=1}^N Var\left(  X_i \right) = \frac{1}{N} \sum_{i=1}^N Var\left(  X \right) = \frac{1}{N}Var(X)
+$$
+
+$$
+    SEM = SD(\bar{X}_N) = \sqrt{Var(\bar{X}_N)} = \sqrt{\frac{1}{N}Var(X)} = \frac{SD(X)}{\sqrt{N}}
+$$
+
+Außerdem gilt nach dem zentralen Grenzwertsatz, dass der Mittelwert normalverteilt ist. (Details: https://saschameyen.com/pdfs/Central-Limit-Theorem.html)
+
+$$
+    \lim_{N\rightarrow \infty} \bar{X}_N \sim \mathcal{N}
+$$
+
+<details>
+
+```{r}
+
+# Convolution functions --------------------------------------------------------
+
+# Convolve to get the distribution of the sum of X + Y
+convolve_two_random_variables <- function(X, Y)
+{
+  X_matrix <- matrix(rep(X$outcome, nrow(Y)), nrow = nrow(X), ncol = nrow(Y))
+  Y_matrix <- matrix(rep(Y$outcome, nrow(X)), nrow = nrow(X), ncol = nrow(Y), byrow = T)
+
+  sum_matrix         <- X_matrix + Y_matrix
+  probability_matrix <- X$probability %o% Y$probability
+
+  Z <- aggregate(list(probability = c(probability_matrix)),
+                 by = list(outcome = c(sum_matrix)),
+                 sum)
+  Z
+}
+
+# Get the distribution of X1 + X2 + ... + XN
+get_n_times_convolved_random_variable <- function(N, X) 
+{  
+  S <- data.frame(outcome = 0, probability = 1)
+
+  for (i in 1:N) 
+    S <- convolve_two_random_variables(S, X)
+
+  S$outcome <- S$outcome/N
+  S
+}
+
+
+# Random variables -------------------------------------------------------------
+
+# Six sided die
+X <- data.frame(outcome = 1:6, probability = rep(1/6, 6)) 
+
+# Geometric distribution
+X <- data.frame(outcome = 0:100, probability = dgeom(0:100, prob = 0.8)) 
+
+# Pizza distribution
+X <- data.frame(outcome = c(1, 2, 3, 4), probability = c(0.4, 0.2, 0.3, 0.1)) 
+
+
+# Visualize --------------------------------------------------------------------
+
+N <- 1
+M <- get_n_times_convolved_random_variable(N, X)
+xlim <- c(M$outcome[min(which(cumsum(M$probability) > .01))],
+          M$outcome[max(which(cumsum(M$probability) < .999))+1])
+
+# Plot mean distribution
+plot(M, 
+     type = 'h', 
+     xlab = bquote('Mean of N independent draws from X, '*s["N ="*.(N)]), 
+     ylab = bquote('Probability P('*S["N ="*.(N)]*'='*s["N ="*.(N)]*')'),
+     xlim = xlim)
+
+# Add normal distribution with corresponding expected value and variance
+E   <- sum(X$probability * X$outcome)
+Var <- sum(X$probability * (X$outcome - E)^2 ) / N
+f <- dnorm(M$outcome, E, sqrt(Var))
+points(M$outcome, f/sum(f),
+       type = 'l', col = 'orange', lwd = 4)
+```
+
+</details>
+
+Das ist fast alles, was wir wissen müssen.
+
+Damit ist der Mittelwert für große Stichproben (Daumenregeln $N\geq30$) um den gesuchten Erwartungswert mit Normalverteilung verteilt und hat eine Standardabweichung — genannt standard error of the mean, SEM — die kleiner wird, je größer $N$ ist.
+$$
+    \bar{X}_N \overset{a}{\sim}\mathcal{N}\left(E(X), SEM^2 \right) \\[1cm]
+$$
+
+## $z$ Test
+
+Jetzt können wir für einen Mittelwert entscheiden, ob er plausiblerweise aus einem normalen Würfel entstanden ist oder nicht. Wenn es sich um einen gewöhnlichen Würfel handelt (Nullhypothese), dann gilt:
+
+$$
+  \text{Nullhypothese:}~\bar{X}_{N=30} \sim \mathcal{N}\left(3.5, \left( \frac{1.71}{\sqrt{30}} \right)^2 \right)
+$$
+
+Für einen beobachteten Mittelwert können wir dann die Wahrscheinlichkeit berechnen, diesen oder einen noch weiter abweichenden Wert zu finden. Diese Wahrscheinlichkeit nennen wir $p$-Wert. 
+
+$$
+  p\text{-Wert} = P(\text{Beobachteter oder noch weiter abweichender Mittelwert} \mid \text{Nullhypothese})
+$$
+
+Im Beispiel mit $bar{X}_N = 3.73$ ist das $p = .461$, was wir durch `2*(1 - pnorm(3.73, mean = 3.5, sd = 1.71/sqrt(30)))` erhalten. Für einen Mittelwert von $\bar{X}_{N=30} = 4.2$ wäre dieser $p$-Wert kleiner, $p = .025$.
+
+```{r, eval = T, class.source = 'fold-hide', fig.height = 8}
+
+par(mfrow = c(2, 1))
+
+# Sample
+N <- 30   # Number of observations, also called sample size
+M <- 3.73 # Mean or average value of the observations
+
+# Random variable X
+E   <- 3.5        # Expected value: This is our hypothesis we want to test
+Var <- 35/12      # Variance of the individual observations
+SD  <- sqrt(Var)  # Standard deviation of the individual observations
+SEM <- SD/sqrt(N) # Standard error = standard deviation of the mean
+
+# Distribution curves
+x <- seq(2, 5, .01)
+f <- dnorm(x, mean = E, sd = SEM)
+plot(x, f,
+     type = 'l', 
+     xlab = 'Mean', yaxt = 'n', ylab = '', 
+     frame.plot = F,
+     xlim = c(min(x), max(x)), lwd = 3,
+     main = 'Verteilung des Mittelwerts unter der Nullhypothese')
+
+# Visualize p value
+xcol   <- seq(M, 6, .001)
+fcol   <- dnorm(xcol, mean = E, sd = SEM)
+redCol <- rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(3.9, .125, "p/2", xpd = T)
+
+xcol   <- seq(0, E + (E - M), .001)
+fcol   <- dnorm(xcol, mean = E, sd = SEM)
+redCol <- rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(3.1, .125, "p/2", xpd = T)
+
+# Mean on x-axis
+axis(1, at = M, label = expression(bar(x)[N]), cex.axis = 1.3)
+
+# Compute p value
+p <- 2*(1 - pnorm(M, mean = E, sd = SEM))
+
+#  -----------------------------------------------------------------------------
+
+# Sample
+N <- 30   # Number of observations, also called sample size
+M <- 4.2  # Mean or average value of the observations
+
+# Random variable X
+E   <- 3.5        # Expected value: This is our hypothesis we want to test
+Var <- 35/12      # Variance of the individual observations
+SD  <- sqrt(Var)  # Standard deviation of the individual observations
+SEM <- SD/sqrt(N) # Standard error = standard deviation of the mean
+
+# Distribution curves
+x <- seq(2, 5, .01)
+f <- dnorm(x, mean = E, sd = SEM)
+plot(x, f,
+     type = 'l', 
+     xlab = 'Mean', yaxt = 'n', ylab = '', 
+     frame.plot = F,
+     xlim = c(min(x), max(x)), lwd = 3,
+     main = 'Verteilung des Mittelwerts unter der Nullhypothese')
+
+# Visualize p value
+xcol   <- seq(M, 6, .001)
+fcol   <- dnorm(xcol, mean = E, sd = SEM)
+redCol <- rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(4.4, .125, "p/2", xpd = T)
+
+xcol   <- seq(0, E + (E - M), .001)
+fcol   <- dnorm(xcol, mean = E, sd = SEM)
+redCol <- rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(2.6, .125, "p/2", xpd = T)
+
+# Mean on x-axis
+axis(1, at = M, label = expression(bar(x)[N]), cex.axis = 1.3)
+
+# Compute p value
+p <- 2*(1 - pnorm(M, mean = E, sd = SEM))
+```
+
+Wir legen uns vor dem Experiment auf einen Wert fest, ab dem wir sagen, dass $p$ zu klein ist und wir deshalb daran zweifeln, dass $E(X) = 3.5$ tatsächlich der Fall ist. Diesen Wert nennen wir das $\alpha$-Niveau (Alpha-Niveau) oder Signifikanzniveau. 
+
+$$
+  \text{Signifikanzniveau}~\alpha
+$$
+
+* Wenn $p < \alpha$: Wir lehnen die Nullhypothese ab. Es liegt Evidenz gegen die Nullhypothese vor.
+* Wenn $p \geq \alpha$: Wir lehnen die Nullhypothese nicht ab. Es liegt keine Evidenz gegen die Nullhypothese vor (aber auch keine definitive Evidenz für die Nullhypothese).
+
+
+## $t$ Tests
+
+Den $z$ Test wenden wir in der Praxis nicht an, weil wir fast nie wissen, was die wahre Varianz der Beobachtungen $Var(X)$ ist. Stattdessen schätzen wir die Varianz aus der Stichprobe mit $S_{N}^2 = \frac{1}{N-1} \sum_{i=1}^N (X_i - \bar{X}_N)^2$, um damit den Standardfehler zu bestimmen:
+
+$$
+  \text{In der Praxis:}~SEM = \frac{SD(X)}{\sqrt{N}} \rightarrow SEM = \frac{S_{N}}{\sqrt{N}} .
+$$
+
+Wir müssen dafür korrigieren, dass wir den SEM schätzen, denn sonst sind wir uns in unseren Aussagen zu sicher. Dafür ersetzen wir die Normalverteilung ($z$) mit der $t$-Verteilung, die im sozusagen die Rolle der Normalverteilung mit geschätzter Varianz einnimmt. 
+
+In der Realität kennen wir auch den Erwartungswert nicht. Über diesen wollen wir ja gerade einen Hypothesentest durchführen. Deshalb ersetzen wir ihn durch unseren hypothetisierten Erwartungwert $\mu_0$:
+
+$$
+  E(X) \rightarrow \mu_0 .
+$$
+
+### Eine Stichprobe
+
+Wir haben eine Stichprobe von $N=30$ Patienten. Bei jedem Patient wurde erhoben, ob es ihnen nach Medikamenteinnahme besser ging, $X_i$. Wir erhalten aus der Stichprobe den Mittelwert $\bar{X}_{N=30} = 1$ und die Standardabweichung $S_{N=30} = 2.38$. Wir testen nun die Hypothese, dass das Medikament in Erwartung keine Verbesserung bringt, Nullhypothese: $\mu_0 = 0$.
+
+```{r, eval = T}
+# Simulate sample with a certain mean and standard deviation
+simulate_sample <- function(N, M, S)
+{
+  x <- rnorm(N) 
+  x <- ( x - mean(x) ) / sd(x) # z transformation
+  x <- x*S + M # Transform to desired mean and standard deviation
+  x
+}
+
+# Simulate
+x <- simulate_sample(N = 30, M = 1, S = 2.38)
+# mean(x) # 1
+# sd(x) # 2.38
+
+# Conduct one-sample t test
+t.test(x, mu = 0)
+```
+
+Als Ergebnis erhalten wir, dass es unwahrscheinlich ist (unwahrscheinlicher als das Signifikanzniveau von $\alpha = 5%$), diesen Mittelwert zu beobachten, wenn das Medikament in Wahrheit keinen Effekt hat (wenn $E(X) = \mu_0 = 0$ wäre). Wir sprechen von einem "signifikanten" Ergebnis — signifikant im Sinne von "eindeutig" oder "überzufällig" von der Nullhypothese abweichend. Deshalb lehnen wir die Nullhypothese, dass das Medikament nicht wirkt, ab. Wir schreiben in einem wissenschaftlichen Bericht:
+
+> The treatment was effective with a mean score of $M=1$ ($SD = 2.38$), $t(29) = 2.3$, $p = .029$, $95\%\text{ CI }[0.11, 1.89]$.
+
+Der $t$ Wert ist, wieviele Standardfehler der Mittelwert von der Nullhypothese entfernt liegt. Hier ist der Standardfehler $SEM = \frac{2.38}{\sqrt{30}} = 0.44$ und $\bar{X}_{N=30} = 1$ ist genau $t=2.3$ viele $SEM = 0.44$ Schritte von $\mu_0 = 0$ entfernt. 
+
+$$
+  t = \frac{\bar{X}_N - \mu_0}{SEM}
+$$
+
+Die Zahl 29 zum $t$-Wert bezeichnet die Freiheitsgrade. Im Einstichprobenfall ist das $df = N-1$. Es ist eine technische Größe, die dafür benötigt wird, die $t$-Verteilung korrekt zu berechnen. Außerdem geben wir das $(1-\alpha)$ Konfidenzintervall an.
+
+### Zwei unabhängige Stichproben mit gleicher Varianz
+
+Bis jetzt hatten wir den einfachen Fall, dass wir eine Stichprobe mit $N$ Werten hatten, $X_1$, ..., $X_N$. Jetzt betrachten wir den Fall, dass wir zwei Reihen von Werten haben, $X_1$, ..., $X_N$ und $Y_1$, ..., $Y_M$. Das ist zum Beispiel der Fall, wenn wir die Effektivität von eines Medikaments mit dem Placebo vergleichen wollen. In Gruppe 1 ($X$) gibt es ein Placebo und in Gruppe 2 ($Y$) gibt es das Medikament. Die Frage ist jetzt, ob es zwischen den beiden Gruppen einen Unterschied hinsichtlich der Effektivität gibt.
+
+Hier gibt es jetzt eine Fallunterscheidung: Nehmen wir an, dass die zugrundeliegende Varianz in beiden Gruppen gleich ist, $Var(X) = Var(Y)$, dann testen wir wie folgt und die Freiheitsgrade sind $df = N_X + N_Y - 2$. (Beachte: Nur weil die zugrundeliegenden Varianzen gleich sind, müssen nicht die beobachteten, zufallsbehafteten Stichprobenvarianzen gleich sein.)
+
+```{r, eval = T, class.source = 'fold-show'}
+x <- simulate_sample(N = 20, M = 0.2, S = 1.9)
+y <- simulate_sample(N = 35, M = 1,   S = 2.38)
+
+t.test(y, x, mu = 0, var.equal = TRUE)
+```
+
+> The treatment ($M=1$, $SD = 2.38$) was not provably more effective than the placebo ($M = 0.2$, $SD = 1.9$), with a difference of $M = 0.8$, $t(53) = 1.29$, $p = .204$, $95\%\text{ CI }[-0.45, 2.05]$.
+
+### Zwei unabhängige Stichproben mit ungleicher Varianz
+
+Wenn wir nicht davon ausgehen, dass zwei Stichproben die gleiche Varianz haben (und das ist in den meisten Fällen so), dann testen wir wie folgt.
+
+
+```{r, eval = T, class.source = 'fold-show'}
+x <- simulate_sample(N = 20, M = 0.2, S = 1.9)
+y <- simulate_sample(N = 35, M = 1,   S = 2.38)
+
+t.test(y, x, mu = 0, var.equal = FALSE)
+```
+
+> The treatment ($M=1$, $SD = 2.38$) was not provably more effective than the placebo ($M = 0.2$, $SD = 1.9$), with a difference of $M = 0.8$, $t(47.2) = 1.37$, $p = .178$, $95\%\text{ CI }[-0.38, 1.98]$.
+
+Die Freiheitsgrade werden hier kleiner, je mehr die Varianz der Stichproben abweicht. Das liegt daran, dass im Extremfall eine Stichprobe gar keine Varianz hat. Dann ist es fast so wie ein Einstichprobenfall, weil ein fester Wert (aus der Stichprobe ohne Varianz) gegen die andere Stichprobe verglichen wird.
+
+<details>
+Die Freiheitsgrade berechnen sich in diesem Fall wie folgt.
+
+$$
+  df = \frac{\left(\frac{s^2_1}{N_1} + \frac{s^2_2}{N_2}\right)^2}{\frac{s^4_1}{N_1^2(N_1-)} + \frac{s^2_4}{N_2^2(N_2-1)}}
+$$
+</details>
+
+### Zwei abhängige Stichproben
+
+Wenn wir zwei Reihen von Werten haben, die aber paarweise zusammengehören, $X_1$, $Y_1$, ..., $X_N$, $Y_N$, dann bilden wir Differenzen, $D_1 = Y_1 - X_1$, ..., $D_N = Y_N - X_N$ und verfahren wie im Einstichprobenfall. Der Vorteil: Variabilität zwischen den Versuchspersonen wird rausgerechnet oder "kontrolliert".
+
+```{r, eval = T, class.source = 'fold-show'}
+set.seed(2024-01-03)
+x <- simulate_sample(N = 35, M = 0.2, S = 1.9)
+y <- x + simulate_sample(N = 35, M = 0.8, S = sqrt(2.38^2 - 1.9^2 + 0.62))
+# mean(y) # 1
+# sd(y)   # 2.38
+
+d <- y - x
+# mean(d) # 0.8
+# sd(d)   # 1.64
+t.test(d, mu = 0)
+```
+
+> Participants' health improved after taking the medication ($M = 0.8$, $SD = 1.64$), $t(34) = 2.89$, $p = .007$, $95\%\text{ CI }[0.24, 1.36]$.
+
+# Konfidenzintervalle
+
+Das Problem von Hypothesentests mit $p$-Werten ist, dass die Nullhypothese $\mu_0 = 0$ abgelehnt werden kann, egal wie groß der Effekt des Medikaments ist. Kleine Effekte werden immer signifikant, wenn die Stichprobe nur groß genug ist.
+
+```{r, eval = T}
+x <- simulate_sample(N = 30000000, M = 0.001, S = 2.38)
+t.test(x)
+```
+
+> The treatment was effective with a mean score of $M=0.001$ ($SD = 2.38$), $t(29999999) = 2.3$, $p = .021$, $95\%\text{ CI }[0.0001, 0.0019]$.
+
+Das Konfidenzintervall gibt an, für welche Werte Nullhypothesenwerte $\mu_0$ der Hypothesentest nicht signifikant ist, also welche Erwartungswerte plausibel sind. Es wichtig, das Konfidenzintervall anzugeben, um einschätzen zu können, wie groß der Effekt des Medikaments ist. "Das Medikament ist nachweislich wirksam" ist weniger aussagekräftig als "Das Medikament hat nachweislich eine Wirksamkeit zwischen [0.0001, 0.0019]" oder "Das Medikament hat nachweislich eine Wirksamkeit zwischen [0.11, 1.89]".
+
+<!-- 
+########     ###    ########    ###   
+##     ##   ## ##      ##      ## ##  
+##     ##  ##   ##     ##     ##   ## 
+##     ## ##     ##    ##    ##     ##
+##     ## #########    ##    #########
+##     ## ##     ##    ##    ##     ##
+########  ##     ##    ##    ##     ## 
+-->
+
+# Beispieldatensatz
+
+Jetzt beginnen wir die Übungsphase. Dafür betrachten wir einen simulierten, fiktiven Datensatz: Es gibt Patienten (männliche `sex_1 = 1` und weibliche `sex_0 = 1`), die drei Behandlungsmethoden durchlaufen haben (`placebo = 1`, `treatment_a = 1` und `treatment_b` = 1). Pro Behandlungsmethode gibt es eine Vorher- (`pre = 1`) und eine Nachher-Messung (`post = 1`). Jeweils wurde der Gesundheitsstatus gemessen (`health`). Wir interessieren uns jetzt erstmal nicht für die Validität der Untersuchung (ob die Gesundheitsmessung sinnvoll war oder ob zwischen den Behandlungsmethoden genug Zeit vergangen ist), sondern uns interessiert nur die statistische Auswertung.
+
+Die Aufgabe besteht nun darin, etwas über die Einflüsse auf Gesundheit herauszufinden.
+
+* Sind Männer insgesamt gesünder als Frauen?
+* Haben Placebos einen Effekt?
+* Hat Behandlung A einen Effekt? Geht dieser Effekt über den Placeboeffekt hinaus?
+* Hat Behandlung B einen Effekt? Geht dieser Effekt über den Placeboeffekt hinaus?
+* Hat Behandlung B einen Effekt für Frauen?
+
+Wir werden erst am Ende aufdecken, welche wahren Effekte der Simulation zugrunde liegen.
+
+```{r, eval = FALSE, echo = FALSE}
+
+# Simluate  --------------------------------------------------------------------
+
+set.seed(2024-01-03)
+
+N   <- 91 # Number of participants
+N_X <- 50 # Number of women
+N_T <- 3  # Number of treatment conditions
+
+# Determine random effects for each participant (some a healthier than others)
+sportiness <- rnorm(N, sd = 0.2)
+
+# Simulate data set
+dat <- data.frame()
+for (i in 1:N) # Participant
+{
+  sex <- i <= N_X
+
+  for (j in 1:N_T) # Treatment
+  {
+    for (k in 1:2) # Pre / post
+    {
+      design <- data.frame(part_id     = i,
+                           sex_0       = (sex == 0)*1, 
+                           sex_1       = (sex == 1)*1,
+                           placebo     = (j == 1  )*1,
+                           treatment_a = (j == 2  )*1,
+                           treatment_b = (j == 3  )*1,
+                           pre         = (k == 1  )*1,
+                           post        = (k == 2  )*1)
+
+      effect <- design$sex_0 * +0.2 + # Women's base health
+                design$sex_1 * -0.2 + # Men's base health
+                design$post * design$placebo * 0.1 + # Effect of placebo
+                design$post * design$treatment_a * 0.5 + # Effect of treatment A
+                design$post * design$treatment_b * 0.1 + # Effect of treatment B
+                design$post * design$treatment_b * design$sex_0 * -0.3 + # Effect of treatment B for women
+                design$post * design$treatment_b * design$sex_1 * +0.3 # Effect of treatment B for men
+
+      design$sportiness <- sportiness[i]
+      design$health     <- 5 + 2 * (sportniess[i] + effect + rnorm(1, sd = 0.3) )
+
+      dat <- rbind(dat, design)
+    }
+  }
+}
+
+# Double check
+head(dat)
+
+# Save data
+write.table(dat, "simulated_health_dat.csv")
+
+# Evaluate  --------------------------------------------------------------------
+
+# Effect of sex
+sex_dat <- aggregate(data = dat,
+                     health ~ part_id * sex_0,
+                     mean)
+
+t.test(sex_dat$health[sex_dat$sex_0 == 0],
+       sex_dat$health[sex_dat$sex_0 == 1])
+
+# Effect of placebo
+placebo_dat <- aggregate(data = dat[dat$placebo == 1,],
+                         health ~ part_id * post,
+                         mean)
+
+placebo_effects <- placebo_dat$health[placebo_dat$post == 1] -
+                   placebo_dat$health[placebo_dat$post == 0]
+t.test(placebo_effects)
+
+# Effect of treatment A
+treatment_A_dat <- aggregate(data = dat[dat$treatment_a == 1,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_A <- treatment_A_dat$health[treatment_A_dat$post == 1] -
+             treatment_A_dat$health[treatment_A_dat$post == 0]
+t.test(effects_A)
+
+# Effect of treatment B
+treatment_B_dat <- aggregate(data = dat[dat$treatment_b == 1,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_B <- treatment_B_dat$health[treatment_B_dat$post == 1] -
+             treatment_B_dat$health[treatment_B_dat$post == 0]
+t.test(effects_B)
+
+# Difference between treatment B and placebo
+effect_B_beyond_placebo <- effects_B - placebo_effects
+t.test(effect_B_beyond_placebo)
+
+# Effect of treatment B for men
+treatment_B_dat <- aggregate(data = dat[dat$treatment_b == 1 & dat$sex_1 == 1,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_B_men <- treatment_B_dat$health[treatment_B_dat$post == 1] -
+                 treatment_B_dat$health[treatment_B_dat$post == 0]
+t.test(effects_B_men)
+
+# Effect of treatment B for women
+treatment_B_dat <- aggregate(data = dat[dat$treatment_b == 1 & dat$sex_1 == 0,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_B_women <- treatment_B_dat$health[treatment_B_dat$post == 1] -
+                   treatment_B_dat$health[treatment_B_dat$post == 0]
+t.test(effects_B_women)
+
+# Effect of sportiness
+( model <- lm(data = dat, health ~ sportiness) )
+anova(model)
+
+# Full ANOVA
+( model <- lm(data = dat, health ~ sex_0 * treatment_a * treatment_b * sportiness) )
+anova(model)
+```
+
+Als Starthilfe ist hier ein Beispiel für die Frage: "Sind Männer nach der Behandlung B gesünder als vorher?"
+
+```{r, eval = TRUE}
+# Load data
+dat <- read.table("simulated_health_dat.csv")
+
+# Get an overview
+# head(dat)
+# summary(dat)
+
+# Effect of treatment B for men
+men_dat <- dat[dat$sex_1 == 1, ]
+men_B_dat <- aggregate(data = men_dat,
+                       health ~ part_id * post,
+                       mean)
+
+# Get one effect for each male participant
+men_B_post   <- men_B_dat$health[men_B_dat$post == 1]
+men_B_pre    <- men_B_dat$health[men_B_dat$post == 0]
+men_B_effect <- men_B_post - men_B_pre
+
+# Hypothesis test
+t.test(men_B_effect, mu = 0)
+```
+
+<!-- 
+########  ########  ######  ####  ######  ####  #######  ##    ##
+##     ## ##       ##    ##  ##  ##    ##  ##  ##     ## ###   ##
+##     ## ##       ##        ##  ##        ##  ##     ## ####  ##
+##     ## ######   ##        ##   ######   ##  ##     ## ## ## ##
+##     ## ##       ##        ##        ##  ##  ##     ## ##  ####
+##     ## ##       ##    ##  ##  ##    ##  ##  ##     ## ##   ###
+########  ########  ######  ####  ######  ####  #######  ##    ##
+ -->
+
+# Entscheidungstheorie
+
+Der typische Hypothesentest nach Fisher betrachtet also nur die Abweichung von der Nullhypothese und schließt, falls die Abweichung groß genug ist, dass die Nullhypothese unplausibel ist und somit abgelehnt wird. Nichts weiter. Wenn die Nullhypothese nicht abgelehnt wird, heißt das nicht, dass wir sie bestätigt haben.
+
+\begin{align*}
+  &\text{Wahrscheinlichkeit die Nullhypothese fälschlicherweise abzulehnen: }&&\alpha 
+  = P(\text{$H_0$ abgelehnt}|\text{$H_0$ wahr}) \\
+  &\text{Wahrscheinlichkeit die Nullhypothese fälschlicherweise beizubehalten: }&&\beta 
+  = P(\text{$H_0$ beibehalten}|\text{$H_0$ falsch})
+\end{align*}
+
+Die Wahrscheinlichkeit, die Nullhypothese korrekterweise abzulehnen wird oft als Teststärke bezeichnet, $1-\beta$.
+
+```{r, eval = T, class.source = 'fold-hide'}
+
+# Random variable X: effect of a medication
+X = c(-2, -1, 0, 0, 0, 0, 1, 1, 1, 2, 3, 3, 3)
+x = as.numeric(unique(X))
+f = c(table(X)/length(X))
+E = sum( f %*% x )
+VAR = sum( f %*% (x - E)^2 )
+SD = sqrt(VAR)
+
+# Stichprobe
+N = 30
+SEM = SD/sqrt(N)
+
+## Two-part figure
+par(mfrow = c(2,1))
+M = 2.3
+
+# First Figure (H0)
+par(mar = c(2,0.5,1,0))
+
+# Distribution curves
+x = seq(-4,4,.01)
+f = dt(x, df = N-1)
+plot(x, f,
+    type = 'l', 
+    xaxt='n', xlab = '', yaxt = 'n', ylab = '', 
+    frame.plot = F,
+    xlim = c(-3.5,3.5), ylim = c(0, .6), lwd = 3,
+    main = 't Verteilung unter Nullhypothese')
+
+# Alpha Area of Rejection
+xcol = seq(qt(.975, df = N-1), 5, .001)
+fcol = dt(xcol, df = N-1)
+redCol = rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(2.6, .125, expression(alpha/2), xpd = T)
+arrows(2.25, .015, 2.65, .1, code = 0, lwd = 2)
+
+xcol = seq(-5, qt(.025, df = N-1), .001)
+fcol = dt(xcol, df = N-1)
+polygon(c(xcol, rev(xcol)),
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(-2.6, .125, expression(alpha/2), xpd = T)
+arrows(-2.25, .015, -2.4, .1, code = 0, lwd = 2)
+
+# P Value
+xcol = seq(M, 5, .001)
+fcol = dt(xcol, df = N-1)
+redCol = rgb(1,.3,.3,.5)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA, xpd = T)
+text(3, .095, paste('p/2'), xpd = T,)
+arrows(2.35, .015, 2.85, .075, code = 0, lwd = 2)
+
+xcol = seq(-5, -M, .001)
+fcol = dnorm(xcol)
+polygon(c(xcol, rev(xcol)),
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(-3, .095, paste('p/2'), xpd = T)
+arrows(-2.35, .015, -2.85, .075, code = 0, lwd = 2)
+
+# Borders
+arrows(qt(.975, df = N-1), 0, qt(.975, df = N-1), 0.55, lwd = 3, code = 0)
+text(qt(.975, df = N-1), .57, expression(paste('Kritischer Wert nach ',H[0])))
+
+arrows(qt(.025, df = N-1), 0, qt(.025, df = N-1), 0.55, lwd = 3, code = 0)
+text(qt(.025, df = N-1), .57, expression(paste('Kritischer Wert nach ',H[0])))
+
+arrows(qt(.975, df = N-1), .45, qt(.975, df = N-1)+1.5, 0.45, lwd = 3, length = .1)
+text(qt(.975, df = N-1)+1, .49, expression(paste(H[0],' ablehnen')))
+
+arrows(qt(.025, df = N-1), .45, qt(.025, df = N-1)-1.5, 0.45, lwd = 3, length = .1)
+text(qt(.025, df = N-1)-1, .49, expression(paste(H[0],' ablehnen')))
+
+arrows(qt(.975, df = N-1), .45, qt(.975, df = N-1)-.5, 0.45, lwd = 3, length = .1)
+arrows(qt(.025, df = N-1), .45, qt(.025, df = N-1)+.5, 0.45, lwd = 3, length = .1)
+text(0, .49, expression(paste(H[0],' beibehalten')))
+
+
+## Second plot (H1)
+
+par(mar = c(8,0.5,1,0))
+# Distribution curves
+x = seq(-4,4,.01)
+f = dt(x, df = N-1, ncp = E/SEM*sqrt((N-1)/2) * gamma((N-2)/2)/gamma((N-1)/2) )
+plot(x, f,
+    type = 'l', xaxt='n', 
+    xlab = '', yaxt = 'n', ylab = '', frame.plot = F,
+    xlim = c(-3.5,3.5), ylim = c(0, .6), lwd = 3,
+    main = 'Wahre t Verteilung')
+
+# Beta Area
+xcol = seq(
+    qt(.025, df = N-1),
+    qt(.975, df = N-1),
+    .001)
+gcol = dt(xcol, df = N-1, ncp = E/SEM*sqrt((N-1)/2) * gamma((N-2)/2)/gamma((N-1)/2) )
+blueCol = rgb(.3,.3,1,.3)
+polygon(c(xcol, rev(xcol)),
+        c(gcol*0, rev(gcol)),
+        col = blueCol, border = NA)
+text(0.5, .125, expression(paste(beta)), xpd = T)
+
+
+# Borders
+arrows(qt(.975, df = N-1), 0, qt(.975, df = N-1), 0.55, lwd = 3, code = 0)
+
+arrows(qt(.025, df = N-1), 0, qt(.025, df = N-1), 0.55, lwd = 3, code = 0)
+
+
+# X Axis
+axis(1, at = c(-1000, 0, M, E/SEM, 1000), labels = c(0,NA,NA,NA,1), line = 1, lwd = 2)
+axis(1, at = c(0, M, E/SEM), labels = c(expression(mu[0]), expression(bar(x)), expression(mu)), tick = F, line = 1)
+
+arrows(0,-.13, 1,-.13, xpd = T, angle = 90, code = 3, length = .1, lwd = 2)
+text(.5,-.175, 'SEM', xpd = T)
+
+# T Axis
+axis(1, at = c(-1000, qt(.025, df = N-1), 0, qt(.975, df = N-1), M, 1000, E/SEM), 
+    labels = c(NA, NA, NA, NA, NA, NA, NA), line = 5, lwd = 2)
+
+axis(1, 
+    at = c(qt(.025, df = N-1), 0, qt(.975, df = N-1), M + 0.2, E/SEM+0.2), 
+    labels = c(expression(-t[krit]), 0, expression(t[krit]), 't-Wert', ''), 
+    tick = F, line = 5.2)
+
+arrows(0,-.57, 1,-.57, xpd = T, angle = 90, code = 3, length = .1, lwd = 2)
+text(.5,-.61, '1', xpd = T)
+
+```
+
+Konfidenzintervalle folgen der gleichen Logik. Auch hier ist es wichtig, auf die Interpretation zu achten: 95\% der so konstruierten Konfidenzintervalle schließen den wahren Wert mit ein. Dagegen wehren sich Frequentisten gegen die Interpretation "zu 95\% liegt der wahre Wert im Konfidenzintervall", denn der wahre Wert ist festgelegt und liegt entweder darin oder nicht. Nur die erhobenen Daten sind variabel und wir treffen deshalb eine Wahrscheinlichkeitsaussage über das Konfidenzintervall und nicht über den wahren Wert. (Das wird dann später mit Bayesianischer Statistik gemacht.)
+
+```{r, eval = T, class.source = 'fold-hide'}
+
+x = seq(-5,5,.01)
+f = dnorm(x)
+mar.default = par('mar')
+mar.new = mar.default
+mar.new[1] = mar.new[1]+10
+mar.new[2] = mar.new[2]+3
+par(mar = mar.new)
+
+plot(x,f,type = 'l', xaxt='n', xlab = '', yaxt = 'n', ylab = '', frame.plot = F)
+
+arrows(0, -.07, 0, -.3, code = 0, xpd = T)
+arrows(qnorm(.975), -.1, qnorm(.975), .1, code = 0)
+arrows(qnorm(.025), -.1, qnorm(.025), .1, code = 0)
+xcol = seq(qnorm(.025), qnorm(.975), .001)
+fcol = dnorm(xcol)
+greenCol = rgb(.3,1,.3,.3)
+polygon(c(xcol, rev(xcol)),
+        c(fcol*0, rev(fcol)),
+        col = greenCol)
+
+
+xcol = seq(-5, qnorm(.025), .001)
+fcol = dnorm(xcol)
+redCol = rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)),
+        c(fcol*0, rev(fcol)),
+        col = redCol)
+
+xcol = seq(qnorm(.975), 5, .001)
+fcol = dnorm(xcol)
+redCol = rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)),
+        c(fcol*0, rev(fcol)),
+        col = redCol)
+
+arrows(2.2, .02, 3, .1, code = 0)
+text(3.5,.1, '2.5%')
+
+
+arrows(-2.2, .02, -3, .1, code = 0)
+text(-3.5,.1, '2.5%')
+
+text(0, .2, '95%')
+# text(-6, .3, paste0('95% der Mittelwerte \n','fallen in den Bereich \n', '[',bquote(mu),' +- z_.975 x sigma/sqrt(N)]'), xpd = T)
+text(-5, .35, '95% der Mittelwerte\nfallen in das Intervall\n', xpd = T)
+text(-5, .25, bquote('['~mu~'\U00B1'~z[0.975]~frac(sigma,sqrt(N))~']'), xpd = T)
+
+axis(1, at = c(0), labels = c(expression(mu)), lwd = 0, line = -1)
+plotCI = function(x, y)
+{
+  arrows(x+qnorm(.025), y, 
+         x+qnorm(.975), y, code = 0, lwd = 3, xpd = T)
+  arrows(x+c(qnorm(.025), qnorm(.975)), y+c(-0.01, -0.01), 
+         x+c(qnorm(.025), qnorm(.975)), y+c(+0.01, +0.01), code = 0, lwd = 3, xpd = T)
+}
+plotCI(0,0)
+
+
+
+text(-6, -0.1, 'Exp. 1', xpd = T)
+arrows(-5,-0.1, 5, -0.1, code = 0, xpd = T)
+plotCI(0.5, -0.1)
+points(0.5, -0.1, xpd = T, pch = 4, cex = 1.5, lwd = 3, col = 'lightgreen')
+
+
+text(-6, -0.15, 'Exp. 2', xpd = T)
+arrows(-5,-0.15, 5, -0.155, code = 0, xpd = T)
+plotCI(-1, -0.15)
+points(-1, -0.15, xpd = T, pch = 4, cex = 1.5, lwd = 3, col = 'lightgreen')
+
+text(-6, -0.2, 'Exp. 3', xpd = T)
+arrows(-5,-0.2, 5, -0.2, code = 0, xpd = T)
+plotCI(1.3, -0.2)
+points(1.3, -0.2, xpd = T, pch = 4, cex = 1.5, lwd = 3, col = 'lightgreen')
+
+text(-6, -0.2475, 'Exp. 4', xpd = T)
+arrows(-5,-0.2475, 5, -0.2475, code = 0, xpd = T)
+plotCI(2.5, -0.2475)
+points(2.5, -0.2475, xpd = T, pch = 4, cex = 1.5, lwd = 3, col = 'red')
+
+
+par(mar = mar.default)
+
+```
+
+Aber es bleibt dabei, wenn ein hypothetisierter Wert außerhalb des Konfidenzintervalls liegt (und der beobachtete Mittelwert damit signifikant von diesem hypothetisierten Wert abweicht), geht man davon aus, dass dieser hypothetisierte Wert nicht der Wahrheit entspricht.
+
+<!-- Cumming, G. (2014). The new statistics: Why and how. <i>Psychological Science</i>, 25(1), 7-29. -->
+
+<!-- 
+##     ## ####  ######  ##     ##    ###    ##      
+##     ##  ##  ##    ## ##     ##   ## ##   ##      
+##     ##  ##  ##       ##     ##  ##   ##  ##      
+##     ##  ##   ######  ##     ## ##     ## ##      
+ ##   ##   ##        ## ##     ## ######### ##      
+  ## ##    ##  ##    ## ##     ## ##     ## ##      
+   ###    ####  ######   #######  ##     ## ########
+ -->
+
+# Visualisierungen
+
+## Barplot
+
+```{r}
+
+# Load data
+dat <- read.table("simulated_health_dat.csv")
+
+# Effect of sex
+sex_dat <- aggregate(data = dat,
+                     health ~ part_id * sex_0,
+                     mean)
+
+x <- sex_dat$health[sex_dat$sex_0 == 0]
+y <- sex_dat$health[sex_dat$sex_0 == 1]
+
+sem <- function(x) { sd(x)/sqrt(length(x)) }
+
+# Prepare data
+Ms   <- c(mean(x), mean(y))
+SEMs <- c(sem(x), sem(y))
+
+# Barplot
+bx <- barplot(Ms,
+              xlim     = c(-0.1, 0.62),
+              ylim     = c(4, 8),
+              xpd      = FALSE,
+              width    = 0.2,
+              col      = c("gray85", "gray25"),
+              ylab     = "Health Score",
+              cex.lab  = 1.5,
+              cex.axis = 1.5)
+box()
+
+# Legend
+legend("topright",
+       fill   = c("gray85", "gray25"),
+       legend = c("Men", "Women"), 
+       cex    = 2)
+
+# Error bars
+arrows(bx, Ms - SEMs,  # Lower position
+       bx, Ms + SEMs,  # Upper position
+       angle = 90,     # Orthogonal arrow heads
+       code  = 3,      # Both sides
+       len   = 0.1,    # Length of the bars
+       lwd   = 2)      # Width of the lines
+```
+
+## Histogramm
+
+```{r}
+
+# Load data
+dat <- read.table("simulated_health_dat.csv")
+
+# Effect of sex
+sex_dat <- aggregate(data = dat,
+                     health ~ part_id * sex_0,
+                     mean)
+
+x <- sex_dat$health[sex_dat$sex_0 == 0]
+y <- sex_dat$health[sex_dat$sex_0 == 1]
+
+sem <- function(x) { sd(x)/sqrt(length(x)) }
+
+# Prepare data
+Ms   <- c(mean(x), mean(y))
+SEMs <- c(sem(x), sem(y))
+
+# Barplot
+breaks = seq(0, 10, 1/3)
+hist(x,
+     main     = "Histogram of Health Scores",
+     xlab     = "Health Score",
+     col      = rgb(1, 0, 0, .2),
+     xlim     = c(3, 7), 
+     breaks   = breaks,
+     cex.main = 2,
+     cex.axis = 1.25,
+     cex.lab  = 1.5,
+     ylim     = c(0, 20))
+hist(y,
+     col = rgb(0, 0, 1, .2),
+     breaks = breaks,
+     add = TRUE)
+
+# Legend
+legend("topright",
+       fill   = c(rgb(0, 0, 1, .2), rgb(1, 0, 0, .2)),
+       legend = c("Men", "Women"), 
+       cex    = 2)
+```
+
+## Interaktionsplot
+
+```{r}
+
+# Load data
+dat <- read.table("simulated_health_dat.csv")
+
+# Effect of treatment
+treatment_dat <- aggregate(data = dat,
+                           health ~ part_id * treatment_a * treatment_b,
+                           mean)
+
+sem <- function(x) { sd(x)/sqrt(length(x)) }
+mean_dat <- aggregate(data = dat,
+                      health ~ placebo * treatment_a * treatment_b * pre * post,
+                      function(x) { c(M   = mean(x), 
+                                      SEM = sem(x)) } )
+mean_dat$health <- data.frame(mean_dat$health)
+
+# Color Blind Palette (Okabe & Ito, 2008)
+black          <- rgb(0, 0, 0)
+orange         <- rgb(.9, .6, 0)
+sky_blue       <- rgb(.35, .7, .9)
+bluish_green   <- rgb(0, .6, .5)
+yellow         <- rgb(.95, .9, .25)
+blue           <- rgb(0, .45, .7)
+vermillon      <- rgb(.8, .4, 0)
+reddish_purple <- rgb(.8, .6, .7)
+
+# Interaction plot
+x_jitter <- seq(-0.02, +0.02, length.out = 3)
+plot(mean_dat$post + x_jitter, 
+     mean_dat$health$M,
+     pch      = 16,
+     cex      = 1.5,
+     col      = c(black, orange, sky_blue),
+     xlim     = c(-0.2, 1.2),
+     ylim     = c(4.5, 6.5),
+     xaxt     = "n",
+     xlab     = "",
+     ylab     = "Health Score",
+     cex.lab  = 1.5,
+     cex.axis = 1.25)
+axis(1, at = c(0, 1), labels = c("Pre", "Post"),
+     cex.axis = 1.5)
+
+# Lines between points
+arrows(mean_dat$post[mean_dat$post == 0] + x_jitter,
+       mean_dat$health$M[mean_dat$post == 0],
+       mean_dat$post[mean_dat$post == 1] + x_jitter,
+       mean_dat$health$M[mean_dat$post == 1],
+       code = 0,
+       col  = c(black, orange, sky_blue),
+       lwd  = 3,
+       lty  = 1:3)
+
+# Error bars
+arrows(mean_dat$post + x_jitter,
+       mean_dat$health$M - mean_dat$health$SEM,
+       mean_dat$post + x_jitter,
+       mean_dat$health$M + mean_dat$health$SEM,
+       code  = 3,
+       angle = 90,
+       col   = c(black, orange, sky_blue),
+       lwd   = 2,
+       len   = 0.1)
+
+# Legend
+legend("topleft",
+       legend = c("Placebo", "Treatment A", "Treatment B"),
+       col    = c(black, orange, sky_blue),
+       lty    = 1:3, 
+       pch    = 16,
+       cex    = 1.5,
+       lwd    = 3)
+```
+
+
+
+<!-- 
+   ###    ##    ##  #######  ##     ##    ###   
+  ## ##   ###   ## ##     ## ##     ##   ## ##  
+ ##   ##  ####  ## ##     ## ##     ##  ##   ## 
+##     ## ## ## ## ##     ## ##     ## ##     ##
+######### ##  #### ##     ##  ##   ##  #########
+##     ## ##   ### ##     ##   ## ##   ##     ##
+##     ## ##    ##  #######     ###    ##     ##
+ -->
+
+# ANOVA
+
+Eine Varianzanalyse (Analysis of Variances, ANOVA) betrachtet, ob die Abweichungen der Beobachtungen von der Nullhypothese durch die Varianz der Beobachtungen erklärt werden können oder ob es systematische Abweichungen gibt. Es ist also eine Verallgemeinerung von den $t$ Tests, die wir kennengelernt haben.
+
+Betrachten wir zum Anfang wieder kurz einen Würfel und nehmen als Beispiel an, dass es drei Varianten gibt, den Würfel zu werfen: (a) normal werfen, (b) die Sechs nach oben legen und dann werfen, (c) die Eins nach oben legen und dann werfen. Nun werfen wir in jeder Bedingung den Würfel $N = 30$ mal und notieren die Mittelwerte.
+
+```{r, class.source = 'fold-hide'}
+
+set.seed(2024-01-04)
+x_A <- sample(1:6, 30, replace = TRUE)
+x_B <- sample(1:6, 30, replace = TRUE)
+x_C <- sample(1:6, 30, replace = TRUE)
+
+# Means
+m_A <- mean(x_A)
+m_B <- mean(x_B)
+m_C <- mean(x_C)
+Ms   <- c(m_A, m_B, m_C)
+
+# SEMs
+sem_A <- sem(x_A)
+sem_B <- sem(x_B)
+sem_C <- sem(x_C)
+SEMs <- c(sem_A, sem_B, sem_C)
+
+par(mfrow = c(1, 2))
+
+# Mean plot
+plot(1:3,
+     Ms,
+     pch      = 16,
+     cex      = 1.5,
+     xlim     = c(0.8, 3.2),
+     ylim     = c(1.5, 5.5),
+     xaxt     = "n",
+     xlab     = "",
+     ylab     = "Mean Dice Rolls",
+     cex.lab  = 1.5,
+     cex.axis = 1.25)
+axis(1, at = c(1, 2, 3), labels = c("A", "B", "C"),
+     cex.axis = 1.5)
+
+# Error bars
+arrows(1:3,
+       Ms - SEMs,
+       1:3,
+       Ms + SEMs,
+       code  = 3,
+       angle = 90,
+       lwd   = 2,
+       len   = 0.1)
+
+dat <- data.frame(i = factor(rep(1:3, each = 30)),
+                  x = c(x_A, x_B, x_C))
+anova_evaluation <- anova(lm(data = dat, x~i))
+F <- unlist(anova_evaluation)[7]
+legend("bottom", paste0("F(2, 87) = ", round(F, 2)))
+
+# Mean plot
+Ms <- Ms + c(0, +0.7, -0.7)
+plot(1:3,
+     Ms,
+     pch      = 16,
+     cex      = 1.5,
+     xlim     = c(0.8, 3.2),
+     ylim     = c(1.5, 5.5),
+     xaxt     = "n",
+     xlab     = "",
+     ylab     = "Mean Dice Rolls",
+     cex.lab  = 1.5,
+     cex.axis = 1.25)
+axis(1, at = c(1, 2, 3), labels = c("A", "B", "C"),
+     cex.axis = 1.5)
+
+# Error bars
+arrows(1:3,
+       Ms - SEMs,
+       1:3,
+       Ms + SEMs,
+       code  = 3,
+       angle = 90,
+       lwd   = 2,
+       len   = 0.1)
+
+# Legend
+dat <- data.frame(i = factor(rep(1:3, each = 30)),
+                  x = c(x_A, x_B+0.7, x_C-0.7))
+anova_evaluation <- anova(lm(data = dat, x~i))
+F <- unlist(anova_evaluation)[7]
+legend("bottom", paste0("F(2, 87) = ", round(F, 2)))
+
+par(mfrow = c(1, 1))
+
+```
+
+Bei der ANOVA wird davon ausgegangen, dass die einzelnen Beobachtungen normalverteilt und dass die Varianz in jeder Gruppe gleich ist (anders als beim $t$-Test).
+
+$$
+  X_{ij} = \mu_i + \varepsilon_{ij} \text{    mit     } \varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2)
+$$
+
+Als Nullhypothese verwenden wir, dass die Erwartungswerte aller Gruppen gleich sind.
+
+$$
+  \text{Nullhypothese: } \mu_1 = \mu_2 = ... = \mu_I
+$$
+
+Da wird jetzt potenziell mehr als zwei Mittelwerte (jeweils einer pro Gruppe) haben, quantifizieren wir die Abweichung nichtmehr als $t = \frac{\bar{X} - \mu_0}{SEM}$ sondern als 
+
+<span style="font-size: 30px">
+$$
+  F = \frac{
+            \frac{ \sum_{i=1}^{I} \sum_{j = 1}^{N} (\hat{X}_{ij} - \bar{X})^2 }{ I - 1 }
+           }{
+            \frac{ \sum_{i=1}^{I} \sum_{j = 1}^{N} (X_{ij} - \hat{X}_{ij})^2 }{ N - I }
+           }
+    = \frac{\text{MQE}}{\text{MQR}} \text{ .}
+$$
+</span>
+
+Falls die Nullhypothese wahr ist, kann hergeleitet werden, wie die $F$-Werte verteilt sind. Die Herleitung überspringen wir hier, aber als Ergebnis erhalten wir, dass sie der $F$-Verteilung folgen, die von $N$ und $I$ abhängt und deren Quantile in R mit `qf` berechnet werden können. Dadurch können wir den $p$-Wert berechnen, also die Wahrscheinlichkeit den beobachteten $F$-Wert oder ein noch größeren zu erhalten, falls die Nullhypothese stimmt. Wie zuvor lehnen wir die Nullhypothese bei kleine $p$-Werten ab.
+
+```{r, class.source = 'fold-hide'}
+
+fs <- seq(0, 6, .01)
+ff <- df(fs, 2, 87)
+plot(fs, ff, 
+     type     = "l",
+     xlab     = "F value",
+     ylab     = "Density",
+     cex.lab  = 1.5,
+     cex.axis = 1.25)
+
+F = 2.54
+axis(1, at = F, label = F, cex = 1.25)
+
+# Visualize p value
+xcol <- seq(F, 6, .01)
+fcol <- df(xcol, 2, 87)
+redCol <- rgb(1,.3,.3,.3)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = redCol, border = NA)
+text(3.3, .125, "p = .073", xpd = T, cex = 1.5)
+
+```
+
+## Einfaktorielle ANOVA (Gruppen)
+
+Eine einfaktorielle ANOVA wird zum Beispiel dann durchgeführt, wenn wir untersuchen wollen, ob bei der Verabreichung eines Medikaments der Hersteller eine Rolle spielt. Haben wir zum Beispiel drei Hersteller und die Gesundheitsverbesserung beträgt.
+
+```{r}
+
+set.seed(2024-01-04)
+
+# Simulated data
+N   <- 30
+x_A <- rnorm(N, mean = +1.2, sd = 2)
+x_B <- rnorm(N, mean = +1.8, sd = 2)
+x_C <- rnorm(N, mean = +0.5, sd = 2)
+
+dat <- data.frame(manufacturer = factor(rep(1:3, each = 30)),
+                  health       = c(x_A, x_B, x_C))
+
+# ANOVA
+model <- lm(data = dat, health~manufacturer)
+# cor(predict(model), dat$health)^2 # 0.06
+anova(model)
+```
+
+> We found no evidence that health depends on the manufacturer of the prescribed medication, $F(2, 87) = 2.6$, $p = .078$, $R^2 = .06$.
+
+Wir erwähnen hier den quadrierten Korrelationskoeffizienten, den sogenannten Determinationskoeffizienten, als Maß für die Effektgröße: Er bestimmt den prozentualen Anteil der Varianz, der durch die unabhängige Variable aufgeklärt wird.
+
+## Lineare Regression
+
+Lineare Regression wird auch über eine ANOVA analysiert, nur dass die Vorhersagen jetzt nicht über Gruppenmittelwerte sondern über eine Gerade gemacht werden. Im vorherigen Beispiel hatten wir drei Gruppen, die in keiner Reihenfolge zueinander stehen, also nicht einmal ordinalskaliert sind. Von einer linearen Regression spricht man dagegen, wenn die unabhängige Variable metrisch ist. 
+
+Es gibt hierbei abhängige Beobachtungen wie die Gesundheitswerte, die wir jetzt $Y_1$, ..., $Y_N$ nennen. Daneben gibt es unabhängige Beobachtungen $X_1$, ..., $X_N$, mit denen wir die abhängigen Beobachtungen vorhersagen wollen. Wir nehmen als Beispiel, dass wir die Gesundheitswerte $Y$ durch das Alter $X$ vorhersagen wollen. Die Grundannahme ist, dass es einen linearen Zusammenhang gibt:
+
+$$
+  Y_i = \alpha + \beta \cdot X_i + \epsilon_i \text{     mit     }  \epsilon_i \sim \mathcal{N}(0, \sigma^2)
+$$
+
+```{r, class.source = 'fold-show', eval = T}
+
+set.seed(2024-01-04)
+
+# Simulate data
+alpha  <- 8
+beta   <- -0.05
+
+N      <- 200
+age    <- round(rnorm(N, mean = 45, sd = 15))
+noise  <- rnorm(N, mean = 0, sd = 1)
+health <- alpha + beta * age + noise
+
+dat <- data.frame(i      = 1:N   ,
+                  age    = age   ,
+                  health = health)
+
+# Plot
+par(mar = c(5, 5, 0.5, 0.5))
+plot(age, health,
+     xlab     = "Age",
+     ylab     = "Health Score",
+     cex.axis = 1.25,
+     cex.lab  = 1.5)
+
+# ANOVA
+model <- lm(health ~ age, data = dat)
+# cor(dat$age, dat$health)^2 # 0.36
+abline(model)
+anova(model)
+
+```
+
+> We found a statistical effect of age on health, $F(1, 198) = 112$, $p < .001$, $R^2 = .36$. 
+
+Vorsichtig bei der Interpretation: Wir zeigen hier einen korrelativen, linearen Zusammenhang. Das ist kein Beleg für eine Kausalität. Einen (negativen) statischen Effekt zu finden, heißt hier nicht, dass hohes Alter oft mit niedriger Gesundheit einhergeht. 
+
+* Es könnte sein, dass Alter zu geringerer Gesundheit führt, was in diesem Beispiel sehr plausibel, aber eben noch nicht nachgewiesen. 
+
+* Es kann aber auch sein, dass Menschen mit einer schlechten Gesundheit älter werden (z.B. weil sie weniger rausgehen und dadurch seltener durch Unfälle sterben). 
+
+* Es kann auch sein, dass ein dritter Faktor beide Aspekte bestimmt (z.B. könnten bestimmte Gene krankheitsanfällig machen aber gleichzeitig mit langer Lebenserwartung einhergehen). 
+
+Um eine Kausation zu belegen, ist zufälliges Bestimmen (Randomisieren) der unabhängigen Variable notwendig: Wenn dann weiterhin ein statistischer Effekt vorliegt, ist eine Kausation der unabhängigen Variable auf die abhängige Variable gegeben.
+
+## Mehrfaktorielle ANOVA
+
+Meistens werden ANOVAs durchgeführt, wenn mehrere Faktoren (unabhängige Variablen) zugleich eine abhängige Variable beeinflussen. Dadurch lassen sich dann Interaktionseffekte beschreiben, also dass es auf die konkrete Kombination von unabhängigen Variablen ankommt. Die Grundannahmen bleiben wie zuvor. Hier ein Beispiel, in dem Geschlecht und Medikation einen Interaktionseffekt zeigen.
+
+```{r, class.source = 'fold-show', eval = T}
+
+
+set.seed(2024-01-04)
+
+# Simulate data
+alpha    <- 5
+beta_med_women <-  0
+beta_med_men   <- +1
+
+N          <- 200
+sex        <- c(rep(0, N/2), rep(1, N/2))
+medication <- rep(c(0, 1), N/2)
+noise      <- rnorm(N, mean = 0, sd = 1)
+health[sex == 0] <- alpha + beta_med_women * medication[sex == 0] + noise[sex == 0]
+health[sex == 1] <- alpha + beta_med_men   * medication[sex == 1] + noise[sex == 1]
+
+dat <- data.frame(i          = 1:N               ,
+                  sex        = factor(sex       ),
+                  medication = factor(medication),
+                  health     = health            )
+
+# ANOVA
+model <- lm(data = dat, health ~ sex * medication)
+anova(model)
+
+model1 <- lm(data = dat, health ~ sex)
+model2 <- lm(data = dat, health ~ sex + medication)
+model3 <- lm(data = dat, health ~ sex * medication)
+R2_1 <- cor(predict(model1), dat$health)^2
+R2_2 <- cor(predict(model2), dat$health)^2
+R2_3 <- cor(predict(model3), dat$health)^2
+# R2_1        # .04
+# R2_2 - R2_1 # .08
+# R2_3 - R2_2 # .04
+
+```
+
+> We found main effects of sex ($F(1, 196) = 8.98$, $p = .003$, $R^2 = .04$) and medication ($F(1, 196) = 15.86$, $p < .001$, $\Delta R^2 = .08$) with the effect of medication depending on the sex of the participants (interaction effect; $F(1, 196) = 9.15$, $p = .003$, $\Delta R^2 = .04$).
+
+```{r, class.source = 'fold-hide', eval = TRUE}
+
+# Effect of treatment
+sem <- function(x) { sd(x)/sqrt(length(x)) }
+mean_dat <- aggregate(data = dat,
+                      health ~ sex * medication,
+                      function(x) { c(M   = mean(x), 
+                                      SEM = sem(x)) } )
+mean_dat$health <- data.frame(mean_dat$health)
+
+# Interaction plot
+x_jitter <- seq(-0.02, +0.02, length.out = 2)
+plot(as.numeric(mean_dat$medication) + x_jitter, 
+     mean_dat$health$M,
+     pch      = 16,
+     cex      = 1.5,
+     xlim     = c(0.8, 2.2),
+     ylim     = c(4.5, 6.5),
+     xaxt     = "n",
+     xlab     = "",
+     ylab     = "Health Score",
+     cex.lab  = 1.5,
+     cex.axis = 1.25)
+axis(1, at = c(1, 2), labels = c("No Med.", "Med."),
+     cex.axis = 1.5)
+
+# Lines between points
+arrows(as.numeric(mean_dat$medication[mean_dat$medication == 0]) + x_jitter,
+       mean_dat$health$M[mean_dat$medication == 0],
+       as.numeric(mean_dat$medication[mean_dat$medication == 1]) + x_jitter,
+       mean_dat$health$M[mean_dat$medication == 1],
+       code = 0,
+       lwd  = 3,
+       lty  = 1:2)
+
+# Error bars
+arrows(as.numeric(mean_dat$medication) + x_jitter,
+       mean_dat$health$M - mean_dat$health$SEM,
+       as.numeric(mean_dat$medication) + x_jitter,
+       mean_dat$health$M + mean_dat$health$SEM,
+       code  = 3,
+       angle = 90,
+       lwd   = 2,
+       len   = 0.1)
+
+# Legend
+legend("topleft",
+       legend = c("Women", "Men"),
+       lty    = 1:2, 
+       pch    = 16,
+       cex    = 1.5,
+       lwd    = 3)
+```
+
+<details>
+
+Achtung bei Analysen von Datensätzen, in denen die unabhängigen Variablen konfundiert sind (zusammenhängen). Bei der Interpretation ist wichtig zu berücksichtigen, dass die Effekte der Reihe nach, sequenziell, evaluiert werden.
+
+```{r}
+
+## Simulate data
+set.seed(2)
+n          <- 60
+Sex        <- rbinom(n, 1, .5)
+Occupation <- rbinom(n, 1, .3 + .4*Sex)
+Salary     <- 2000 + 500*Occupation + rnorm(length(Occupation), sd = 100)
+
+## Inspect data
+T1 <- table(Sex, Occupation)
+Ms <- aggregate(list(Salary = Salary),
+                by = list(Sex = Sex, Occupation = Occupation), 
+                mean)$Salary
+T2 <- T1
+T2[1,1] = Ms[1]; T2[2,1] = Ms[2]; T2[1,2] = Ms[3]; T2[2,2] = Ms[4]; 
+T1; T2
+
+dat <- data.frame(Y = Salary, A = Sex, B = Occupation)
+
+
+## Different sequential summed squares results
+summary(aov(lm(Salary ~ Sex)))
+summary(aov(lm(Salary ~ Occupation)))
+summary(aov(lm(Salary ~ Sex * Occupation)))
+summary(aov(lm(Salary ~ Occupation * Sex)))
+
+```
+
+</details>
+
+## Messwiederholungs ANOVA (Repeated Measures ANOVA)
+
+Häufig gibt es Versuchsdesigns, bei denen die gleichen Versuchspersonen in mehreren Gruppen Beobachtungen liefern. Es werden also wiederholt Messungen an den gleichen Versuchspersonen durchgeführt. Dann brauchen wir eine ANOVA mit Messwiederholungen, bei denen die individuellen Effekte rausgerechnet werden. Zum Beispiel wird bei einem Reaktionszeitexperiment rausgerechnet, dass manche Personen in allen Experimentbedingungen langsam sind und andere immer schnell. Das erlaubt die Effekte, die auf die Bedingungen zurück gehen, klarer herauszustellen.
+
+```{r, class.source = 'fold-show', eval = T}
+set.seed(2024-01-04)
+
+# Simulated data
+N   <- 30
+x_A <- rnorm(N, mean = +1.2, sd = 2)
+x_B <- rnorm(N, mean = +1.8, sd = 2)
+x_C <- rnorm(N, mean = +0.4, sd = 2)
+
+# Variability between participants
+sportiness <- rnorm(N, mean = 0, sd = 2)
+x_A <- x_A + sportiness
+x_B <- x_B + sportiness
+x_C <- x_C + sportiness
+
+dat <- data.frame(i            = rep(1:N, 3),
+                  manufacturer = factor(rep(1:3, each = 30)),                  
+                  health       = c(x_A, x_B, x_C))
+
+# ANOVA
+model <- lm(data = dat, health~manufacturer)
+# cor(predict(model), dat$health)^2 # 0.03
+anova(model)
+
+# install.packages("ez")
+library(ez)
+ezANOVA(data = dat, 
+        dv = health,
+        within = manufacturer,
+        wid = i)
+```
+
+> In a repeated measures ANOVA, we found that the health of participants taking prescribed medication depended on the manufacturer, $F(2, 58) = 3.25$, $p = .046$. (There was no violation of sphericity and this effect remained significant after correcting for the marginal deviations from sphericity, $p = .047$.)
+
+
+# Eure Datensätze
+
+Den Rest des Kurses verbringen wir damit, eure Datensätze zu betrachten. Wendet die Tests, die wir bis jetzt gelernt haben an, visualisiert die Daten und schreibt Ergebnissätze. Wir helfen euch dabei!
+
+...
