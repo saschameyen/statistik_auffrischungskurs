@@ -1,0 +1,397 @@
+---
+output:
+  html_document:
+    theme: defaul
+    code_folding: show
+---
+
+## Type-I and Type-II error
+
+In statistic tests, we make a decision about whether a hypothesis is true or not. Depending on the truth, our decision could be correct or not. In general, there are four cases considering both our decision ($\hat{X}$) and the truth ($X$).
+
+<center>
+<div style='width:50%'>
+
+|           |$X=1$  |$X=0$              |
+|:---:      |:-----:|:-----------------:|
+|$\hat{X}=1$|Hit    |False Alarm        |
+|$\hat{X}=0$|Miss   |Correct Rejection  |
+
+</div>
+</center>
+
+In frequentist tests, we assume a null hypothesis to be true and test whether it is in line with collected data. We define a rejection area such that it corresponds to the probability ($\alpha$) with which we reject the null hypothesis despite that the null is true. As a result, we could falsely reject the null even when it is true or falsely keep it even when it is false.
+
+<center>
+<div style='width:50%'>
+
+|            |$H_0$ is true  |$H_0$ is false |
+|:----------:|:-------------:|:-------------:|
+|reject $H_0$|Correct        |Type-I error   |
+|keep $H_0$  |Type-II error  |Correct        |
+
+</div>
+</center>
+
+These two types of error are called _Type-I error_ and _Type-II error_ and the probabilities can be denoted as $\alpha$ and $\beta$.
+
+<div style="background-color:#DDDDFF;">
+
+**Type-I and Type-II error**
+
+Probability for a Type-I error:
+\[\alpha = P(\text{reject } H_0 \text{ when } H_0 \text{ is true})\]
+
+Probability for a Type-II error:
+\[\beta = P(\text{keep } H_0 \text{ when } H_0 \text{ is false})\]
+
+</div>
+
+To design a convincing experiment, one needs to consider both error types. While $\alpha$ can be determined by following the conventions $\alpha \in \{.01, .05, .1\}$ , it is more complicated with $\beta$.
+
+## Test Power
+
+The probability of rejecting the null when the null is false is described as _power_.
+
+<div style="background-color:#DDDDFF;">
+
+**Test Power**
+
+\[ \text{Power} 
+= P(\text{reject } H_0 \text{ when } H_0 \text{ is false}) 
+= 1 - \underbrace{P(\text{keep } H_0 \text{ when } H_0 \text{ is false})}_{\text{P(Type-II error)} = \beta} 
+= 1 -\beta \]
+
+</div>
+
+### Computation of Test Power
+
+To compute the test power of an experiment with fixed sample size, one needs to assume a true effect size (equivalently, a true mean). 
+
+As an example, we consider an experiment in which we examine the effect of a special treatment. A group of $n=25$ participants perform a reaction time (RT) task under both control and treatment conditions. Differences of mean RTs are taken for statistic tests and can be assumed to be normally distributed. Additionally, we assume the standard deviation is known as $\sigma = 150$ms.
+
+To examine whether the treatment has an effect on RT, we perform a two-sided $t$-test, $H_0: \mu = \mu_0 = 0$ vs. $H_1: \mu \neq \mu_0$, with a significant level of $\alpha = .05$.
+
+Specifically, we know that the effect should be $\mu = 80$ms. What is the probability of observing a significant effect in the experiment, given that the true effect is 80ms?
+
+#### Alternative 1: Analytic Calculation
+
+For an analytic solution, a visualisation could be helpful.
+
+```{r class.source = 'fold-hide', fig.align='center', fig.width=10}
+
+# Given: mu_0 = 0, mu = 80, sigma = 150, n = 25
+mu_0  <- 0
+mu    <- 80
+sigma <- 150
+n     <- 25
+alpha <- .05
+se    <- sigma / sqrt(n)
+M     <- mu_0 + 2.2 * se
+
+# Distribution Curves
+x <- seq(mu_0 - 5 * se, mu + 5 * se, .01)
+f <- dnorm(x, mean = mu_0, sd = se)
+plot(x, f, type = 'l', lwd = 3,
+     axes = F, xlab = '', ylab = '',
+     ylim = c(0, 1.3 * max(f)), xlim = c(mu_0 - 4 * se, mu + 4 * se))
+g <- dnorm(x, mean = mu, sd = se)
+points(x, g, type = 'l', col = "deepskyblue4", lwd = 3)
+
+# Mark of Distributions
+text(c(mu_0, mu), 1.1 * dnorm(mu_0, sd = se),
+     expression(mu[0], mu), col = c("black", "deepskyblue4"))
+
+# Right Rejection Area
+xcol <- seq(qnorm(1-alpha/2, sd = se), mu_0 + 5 * se, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred1", border = NA)
+text(mu_0 + 2.2 * se - 15, -.002, expression(alpha/2), xpd = T)
+arrows(mu_0 + 2.2 * se - 2, 0.0005, 
+       mu_0 + 2.2 * se - 12, -0.001, 
+       code = 0, lwd = 2)
+
+# Left Rejection Area
+xcol <- seq(mu_0 - 5 * se, qnorm(alpha/2, sd = se), .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred1", border = NA)
+text(mu_0 - 2 * se, -.002, expression(alpha/2), xpd = T)
+arrows(mu_0 - 2.1 * se, 0.0005, 
+       mu_0 - 2 * se, -0.001, 
+       code = 0, lwd = 2)
+
+# Right P Value
+xcol <- seq(M, mu_0 + 5 * se, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred4", border = NA, xpd = T)
+text(M + 15, -.002, expression(p/2), xpd = T)
+arrows(M + 5, 0.0003, 
+       M + 15, -0.001, 
+       code = 0, lwd = 2)
+
+# Left P Value
+xcol <- seq(mu_0 - 5 * se, -M, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred4", border = NA, xpd = T)
+text(-M - 15, -.002, expression(p/2), xpd = T)
+arrows(-M - 5, 0.0003, 
+       -M - 15, -0.001, 
+       code = 0, lwd = 2)
+
+# Beta Area
+xcol <- seq(qnorm(alpha/2, sd = se), qnorm(1-alpha/2, sd = se), .001)
+gcol <- dnorm(xcol, mean = mu, sd = se)
+polygon(c(xcol, rev(xcol)),
+        c(gcol*0, rev(gcol)),
+        col = "skyblue", border = NA)
+text(mu - 1.3 * se, max(gcol)/4, expression(beta), xpd = T)
+
+# Mark of Critical Value
+arrows(qnorm(1-alpha/2, sd = se), 0, 
+       qnorm(1-alpha/2, sd = se), dnorm(mu_0, sd = se), 
+       lwd = 3, code = 0, lty = 2)
+text(qnorm(1-alpha/2, sd = se), 1.1 * dnorm(mu_0, sd = se),
+     expression(x[crit]))
+
+# Mark of Data Point
+text(M, -.002, expression(bar(x)), xpd = T)
+arrows(M, 0, 
+       M, -0.001, 
+       code = 0, lwd = 2)
+
+```
+
+Remember that the critical and the observed $X$ value can be transformed into a critical and an observed $T$ value, with which we are able to calculate the test power. If the observed $X$ value is more on the side of the alternative compared to the critical $X$ value (equivalently, if the observed $T$ value is more on the side of the alternative compared to the critical $T$ value), we reject the null hypothesis. Otherwise, the null should be keep.
+
+Given that $\sigma=150$ and $n=25$, we obtain $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. The critical $T$ value is determined by the significance level and the sample size, $t_{\text{crit}} = t_{.975}(25) = `r round(qt(.975, 25), 2)`$. This corresponds to the critical $X$ value, $x_{\text{crit}} = \mu_0 \pm SE \cdot t_{\text{crit}} = 0 \pm 30 \cdot `r round(qt(.975, 25), 2)` = \pm `r 30 * round(qt(.975, 25), 2)`$.
+
+Now by knowing that the $X$ comes from the true distribution $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$, we consider the probability that the $X$ value is larger than the critical $X$ value, so that we can reject the null in the hypothesis test. That is, $P(\bar{X} > x_\text{crit}) = P(\bar{X} > 61.8)$. This can be computed in R by `pnorm(q = -61.8, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 61.8, mean = 80, sd = 30, lower.tail = F)`, which is about $73\%$. In another aspect, the probability of a Type-II error in this experiment is $\beta = 1 - 73\% = 27\%$. Thus, it is very likely to find evidence for an effect of the treatment in this study.
+
+#### Alternative 2: Simulation
+
+Since we know the true effect, we can simulate the whole process by sampling data points from the true distribution. Because the power describes the probability of correctly finding an effect, we can estimate it from the simulated data by the relative frequency of a significant result.
+
+```{r}
+
+set.seed(1)
+
+# Given: mu_0 = 0, mu = 80, sigma = 150, n = 25
+mu_0  <- 0
+mu    <- 80
+sigma <- 150
+n     <- 25
+alpha <- .05
+
+# Simulation
+nsim  <- 1e5
+test_results <- replicate(nsim, {
+  x <- rnorm(n, mu, sigma)
+  p_value <- t.test(x, mu = mu_0, 
+                    alternative = "two.sided", 
+                    conf.level = 1 - alpha)$p.value
+  ifelse (p_value < alpha, 1, 0)
+})
+
+# Estimation
+(test_power <- mean(test_results))
+
+```
+
+#### Alternative 3: R-Function
+
+There are some build-in R functions for power computation.
+
+<div style="background-color:#DDDDFF;">
+
+**R Functions for Power Analysis**
+
+- For $t$-test: `power.t.test`
+- For ANOVA: `power.anova.test`
+
+Declaration of the arguments:
+
+- `n`: number of observations per group (important for two sample tests: group sample size are assumed to be equal)
+- `delta`: true difference in means
+- `sd`: standard deviation
+- `power`: test power
+- `sig.level`: $\alpha$ value
+- `type`: `two.sample`/`one.sample`/`paired` (for $t$-test)
+- `alternative`: `two.sided`/`one.sided` (for $t$-test)
+
+</div>
+
+If the power is unknown and of interest, we set the corresponding argument to `NULL`. For our example, we can compute the test power for our example like this:
+
+```{r}
+power.t.test(n = 25, delta = 80, sd = 150, 
+             power = NULL, sig.level = .05, 
+             alternative = 'two.sided', type = 'one.sample')
+```
+
+#### Estimate Effect size
+
+Above, we have assumed the true distribution to be known. This is, however, often not the case in the reality. Consequently, we have to choose a plausible value or a value of interest (usually the smallest value of interest) for the computation of power. To interpret the result, we refer to the chosen value. For example, we would write:
+
+> For an effect $\mu \geq a$, the test power is at least $b \%$.
+
+Sometimes researcher do not specify their null hypothesis with a concrete mean value but with a standardised effect size. For this, Cohen's $d$ is often used, that is, the difference of the mean values standardised by the standard deviation.
+
+<div style="background-color:#DDDDFF;">
+
+**Cohen's $d$**
+
+For one sample tests:
+
+\[D = \frac{|\mu - \mu_0|}{\sigma}\]
+\[d = \frac{|\bar{x} - \mu_0|}{s}\]
+
+For two sample tests:
+
+\[D = \frac{|\mu_X - \mu_Y|}{\sigma}\]
+\[d = \frac{|\bar{x} - \bar{y}|}{s_\text{pooled}} ~~~
+\left( s_\text{pooled} = \sqrt{ \frac{(n_1-1)s_1^2 + (n_2-1)s_2^2} {n_1+n_2-2} } \right) \]
+
+Interpretation:
+
+<center>
+<div style="width:30%">
+| $d$  | Interpretation   |
+|:----:|:----------------:|
+| 0.20 | Small            |
+| 0.50 | Medium           |
+| 0.80 | Large            |
+</div>
+</center>
+
+</div>
+
+For example, in our example above, the effect size is medium, $D = \frac{\mu - \mu_0}{\sigma} = \frac{80 - 0}{150} \approx 0.53$.
+
+
+## Factors Influencing Test Power
+
+<div style="background-color:#DDDDFF;">
+
+**Influencing Factors of Test Power**
+
+- $\alpha$: There is a trade-off between the two types of error. With a smaller $\alpha$, we are less probable to reject the null hypothesis and thus the probability of missing a present effect is higher, that is, the probability of the Type-II error ($\beta$) is higher and the test power is lower.
+
+- $n$: A larger sample size contributes to more test power.
+
+- Effect size: The larger the true difference is, the larger test power an experiment would have.
+
+</div>
+
+Most of the time, we keep our $\alpha$ at $5\%$ and we cannot change the true effect size. In order to have larger test power, we increase our sample size.
+
+
+## Importance of Test Power
+
+Imagine the following situation: A medicine is designed to improve sleep quality. To quantify the sleep quality, participants record how they feel about their sleep by using a scale from 0 (terrible) to 10 (awesome). This is usually done multiple times before and after taking the medicine and mean scores are computed for each participant. 
+
+Before taking the medicine, the expected score of the sleep quality is $Y_0=5$ and the effect of the medicine is actually negligible so that after taking the medicine, the expected score is $Y=5.1$, and the effect is $\mu = 0.1$. We additionally assume the standard deviation of the effect to be known as $\sigma=2$. Therefore, both the raw effect and the standardised effect size are very small, $\mu = 0.1$ and $D = \frac{0.1}{2} = .05$. If 20 research groups with $n=100$ participants of each investigated whether this medicine has an effect ($H_0: \mu = \mu_0 = 0$), their data could look like this:
+
+```{r class.source = 'fold-hide', fig.align='center', fig.width=10}
+
+set.seed(1)
+
+# Given: mu = 0.1, sigma = 2, n = 100
+nsim  <- 20
+mu    <- 0.1
+mu_0  <- 0
+sigma <- 2
+n     <- 100
+SE    <- sigma/sqrt(n)
+alpha <- .05
+
+# Initialisation
+dat <- data.frame(index = NA,
+                  M     = NA,
+                  sd    = NA,
+                  se    = NA,
+                  d     = NA,
+                  p     = NA)[-1, ]
+
+# Simulation
+for (i in 1:nsim) {
+  x  <- rnorm(n, mu, sigma)
+  se <- sd(x)/sqrt(n)
+  d  <- mean(x)/sd(x)
+  p  <- t.test(x, mu = mu_0, 
+               alternative = "two.sided", 
+               conf.level = 1 - alpha)$p.value
+  
+  new_dat <- data.frame(index = i, 
+                        M     = mean(x),
+                        sd    = sd(x),
+                        se    = se,
+                        d     = d,
+                        p     = p)
+  dat <- rbind(dat, new_dat)
+}
+
+# Plot
+par(cex = 1.2, mar = c(3, 3, 0, 0), mgp = c(2, 0.7, 0))
+ylim  <- c(min(dat$M - 2 * dat$se), max(dat$M + 2 * dat$se))
+color <- ifelse(dat$p < alpha, "red", "black")
+plot(M ~ index, dat, ylim = ylim, type = "n", 
+     ylab = "Effect", xlab = "Research Group")
+
+# Mean values and confidence intervals
+points(M ~ index, dat, pch = 16, col = color)
+t_CI_q <- qt(1-alpha/2, n-1)
+arrows(dat$index, dat$M - t_CI_q * dat$se, 
+       dat$index, dat$M + t_CI_q * dat$se, 
+       length = 0.05, angle = 90, 
+       code = 3, col = color, lwd = 2)
+
+# Mark for critical value
+abline(h = mu_0, col = "darkgrey", lty = 2, lwd = 2)
+
+```
+
+In the plot, solid circles depict the effects obtained in the 20 experiments and error bars visualise the $95\%$ confidence interval. The dark grey line indicates absence of effect. Red colour is used for experiments with a significant result in the two-sided $t$-test and black for those with a non-significant result.
+
+As we can see in the plot, only one experiment is significant. This seems intuitive because the true effect is very tiny, but one can also explain this by using power analysis: 
+
+```{r}
+power.t.test(n = n, delta = mu, sd = sigma, 
+             power = NULL, sig.level = alpha, 
+             alternative = 'two.sided', type = 'one.sample')
+```
+
+As the experiments only have few power, it is very difficult to detect a present effect (although it is tiny, it exists).
+
+And what happens in the one experiment that is significant?
+
+```{r class.source = 'fold-hide'}
+
+ex_dat <- dat[which.max(dat$M-dat$se), ]
+ex_dat
+
+```
+
+The effect in this experiment is $\bar{x} \approx 0.59$ and the Cohen's $d \approx .27$. Remember that the true effect is $\mu = 0.1$ and the true standardised effect size $D = .05$, we notice that the observed effect is about 4 times larger than the truth. 
+
+While it is very hard to obtain a significant result in an experiment with few power, a significant result from such experiment suggests a clearly overestimated effect. This explains exactly why "$p$-hacking", where researchers repeat an experiment (and increase sample size at each time) until the result is significant and only report this "glowing" result, is harmful for science.
+
+To avoid this, researchers need to deliberately specify an effect size of relevance and use it to plan the experiment. Specifically, with power analysis, they can decide how many participants they would like to have in order to obtain a significant result with large power.
+
+### Power Analysis for Experiment Planning
+
+By setting the power to a specific value, one can use the build-in R functions to calculated required sample size.
+
+For instance, 3142 participants is needed for our example above to achieve a power of $80\%$. 
+
+```{r}
+power.t.test(n = NULL, delta = 0.1, sd = 2, power = .8, sig.level = 0.05,
+             alternative = 'two.sided', type = 'one.sample')
+```
