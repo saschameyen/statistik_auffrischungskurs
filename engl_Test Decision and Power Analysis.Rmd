@@ -171,9 +171,16 @@ arrows(M, 0,
 
 Remember that the critical and the observed $X$ value can be transformed into a critical and an observed $T$ value, with which we are able to calculate the test power. If the observed $X$ value is more on the side of the alternative compared to the critical $X$ value (equivalently, if the observed $T$ value is more on the side of the alternative compared to the critical $T$ value), we reject the null hypothesis. Otherwise, the null should be keep.
 
-Given that $\sigma=150$ and $n=25$, we obtain $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. The critical $T$ value is determined by the significance level and the sample size, $t_{\text{crit}} = t_{.975}(25) = `r round(qt(.975, 25), 2)`$. This corresponds to the critical $X$ value, $x_{\text{crit}} = \mu_0 \pm SE \cdot t_{\text{crit}} = 0 \pm 30 \cdot `r round(qt(.975, 25), 2)` = \pm `r 30 * round(qt(.975, 25), 2)`$.
+Given that $\sigma=150$ and $n=25$, we obtain $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. The critical $T$ value is determined by the significance level and the sample size, $t_{\text{crit}} = t_{.975}(24) = 2.07$. This corresponds to the critical $X$ value, $x_{\text{crit}} = \mu_0 \pm SE \cdot t_{\text{crit}} = 0 \pm 30 \cdot 2.07 = \pm `r 30 * 2.07`$.
 
-Now by knowing that the $X$ comes from the true distribution $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$, we consider the probability that the $X$ value is larger than the critical $X$ value, so that we can reject the null in the hypothesis test. That is, $P(\bar{X} > x_\text{crit}) = P(\bar{X} > 61.8)$. This can be computed in R by `pnorm(q = -61.8, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 61.8, mean = 80, sd = 30, lower.tail = F)`, which is about $73\%$. In another aspect, the probability of a Type-II error in this experiment is $\beta = 1 - 73\% = 27\%$. Thus, it is very likely to find evidence for an effect of the treatment in this study.
+```{r echo = F, eval = F}
+qt(.975, 24)
+30 * 2.07
+pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + 
+  pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)
+```
+
+Now by knowing that the $X$ comes from the true distribution $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$, we consider the probability that the $X$ value is larger than the critical $X$ values, so that we can reject the null in the hypothesis test. That is, $P(|\bar{X}| > |x_\text{crit}|) = P(|\bar{X}| > 62.1)$. This can be computed in R by `pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)`, which is about $72\%$. In another aspect, the probability of a Type-II error in this experiment is $\beta = 1 - 72\% = 28\%$. Thus, it is very likely to find evidence for an effect of the treatment in this study.
 
 #### Alternative 2: Simulation
 

@@ -1,3 +1,9 @@
+---
+output:
+  html_document:
+    theme: defaul
+    code_folding: show
+---
 
 ## Fehler 1. Art und Fehler 2. Art
 
@@ -20,7 +26,7 @@ Bei frequentistischen Tests nehmen wir eine Nullhypothese als wahr an und prüfe
 <div style='width:50%'>
 
 |                 |$H_0$ is true  |$H_0$ is false |
-|:------------===:|:-------------:|:-------------:|
+|:---------------:|:-------------:|:-------------:|
 |$H_0$ ablehnen   |Richtig        |Fehler 1. Art  |
 |$H_0$ beibehalten|Fehler 2. Art  |Richtig        |
 
@@ -149,11 +155,17 @@ polygon(c(xcol, rev(xcol)),
         col = "skyblue", border = NA)
 text(mu - 1.3 * se, max(gcol)/4, expression(beta), xpd = T)
 
-# Mark of Critical Value
+# Mark of Critical Values
 arrows(qnorm(1-alpha/2, sd = se), 0, 
        qnorm(1-alpha/2, sd = se), dnorm(mu_0, sd = se), 
        lwd = 3, code = 0, lty = 2)
 text(qnorm(1-alpha/2, sd = se), 1.1 * dnorm(mu_0, sd = se),
+     expression(x[crit]))
+
+arrows(qnorm(alpha/2, sd = se), 0, 
+       qnorm(alpha/2, sd = se), dnorm(mu_0, sd = se), 
+       lwd = 3, code = 0, lty = 2)
+text(qnorm(alpha/2, sd = se), 1.1 * dnorm(mu_0, sd = se),
      expression(x[crit]))
 
 # Mark of Data Point
@@ -166,9 +178,16 @@ arrows(M, 0,
 
 Der kritische und der beobachtete $X$-Wert können in einen kritischen und einen beobachteten $T$-Wert umgewandelt werden, mit dem wir die Teststärke berechnen können. Wenn der beobachtete $X$-Wert mehr auf der Seite der Alternative liegt als der kritische $X$-Wert (bzw. wenn der beobachtete $T$-Wert mehr auf der Seite der Alternative liegt als der kritische $T$-Wert), wird die Nullhypothese abgelehnt. Andernfalls sollte die Nullhypothese beibehalten werden.
 
-Gegeben $\sigma=150$ und $n=25$, wir können den Standardfehler berechnen, $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. Der kritische $T$-Wert wird durch das Signifikanzniveau und die Stichprobengröße bestimmt, $t_{\text{krit}} = t_{.975}(25) = `r round(qt(.975, 25), 2)`$. Dies entspricht dem kritischen $X$-Wert, $x_{\text{krit}} = \mu_0 \pm SE \cdot t_{\text{krit}} = 0 \pm 30 \cdot `r round(qt(.975, 25), 2)` = \pm `r 30 * round(qt(.975, 25), 2)`$.
+Gegeben $\sigma=150$ und $n=25$, wir können den Standardfehler berechnen, $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. Der kritische $T$-Wert wird durch das Signifikanzniveau und die Stichprobengröße bestimmt, $t_{\text{krit}} = t_{.975}(24) = 2.07$. Dies ergibt kritische $X$-Werte, $x_{\text{krit}} = \mu_0 \pm SE \cdot t_{\text{krit}} = 0 \pm 30 \cdot 2.07 = \pm `r 30*2.07`$.
 
-Da wir nun wissen, dass $X$ aus der wahren Verteilung $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$ kommt, betrachten wir die Wahrscheinlichkeit, dass der Wert $X$ größer ist als der kritische $X$-Wert, so dass wir die Null im Hypothesentest verwerfen können. Das ist, $P(\bar{X} > x_\text{krit}) = P(\bar{X} > 61.8)$. Dies kann in R durch `pnorm(q = -61.8, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 61.8, mean = 80, sd = 30, lower.tail = F)` berechnet werden, was etwa $73\%$ entspricht. Umgekehrt beträgt die Wahrscheinlichkeit des Fehlers der 2. Art in diesem Experiment $\beta = 1 - 73\% = 27\%$. Es ist also sehr wahrscheinlich, in dieser Studie einen Effekt der Behandlung nachzuweisen.
+```{r echo = F, eval = F}
+qt(.975, 24)
+30 * 2.07
+pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + 
+  pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)
+```
+
+Da wir nun wissen, dass $X$ aus der wahren Verteilung $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$ kommt, betrachten wir die Wahrscheinlichkeit, dass der Wert $X$ extremer ist als die kritischen $X$-Werten, so dass wir die Null im Hypothesentest verwerfen können. Das ist, $P(|\bar{X}| > |x_\text{krit}|) = P(|\bar{X}| > 62.1)$. Dies kann in R durch `pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)` berechnet werden, was etwa $72\%$ entspricht. Umgekehrt beträgt die Wahrscheinlichkeit des Fehlers der 2. Art in diesem Experiment $\beta = 1 - 72\% = 28\%$. Es ist also sehr wahrscheinlich, in dieser Studie einen Effekt der Behandlung nachzuweisen.
 
 #### Alternative 2: Simulation
 
@@ -224,7 +243,7 @@ Erklärung der Argumente:
 
 </div>
 
-Wenn die Teststärke zu berechnen ist, setzen wir das entsprechende Argument auf `NULL`. Für unser Beispiel können wir die Teststärke für unser Beispiel wie folgt berechnen:
+Wenn die Teststärke zu berechnen ist, setzen wir das entsprechende Argument auf `NULL`. Für unser Beispiel können wir die Teststärke wie folgt berechnen:
 
 ```{r}
 power.t.test(n = 25, delta = 80, sd = 150, 
@@ -235,7 +254,7 @@ power.t.test(n = 25, delta = 80, sd = 150,
 
 #### Schätzung der Effektgröße
 
-Gerade haben wir angenommen, dass die wahre Verteilung bekannt ist. Dies ist jedoch in der Realität oft nicht der Fall. Daher für die Berechnung der Teststärke, müssen wir einen plausiblen Wert oder einen Wert von Interesse (in der Regel den kleinsten Wert von Interesse) wählen. Um das Ergebnis zu interpretieren, beziehen wir uns auf den gewählten Wert. Wir würden zum Beispiel schreiben:
+Gerade haben wir angenommen, dass die wahre Verteilung bekannt ist. Dies ist jedoch in der Realität oft nicht der Fall. Daher für die Berechnung der Teststärke müssen wir einen plausiblen Wert oder einen Wert von Interesse (in der Regel den kleinsten Wert von Interesse) wählen. Um das Ergebnis zu interpretieren, beziehen wir uns auf den gewählten Wert. Wir würden zum Beispiel schreiben:
 
 > For an effect $\mu \geq a$, the test power is at least $b \%$.
 
@@ -281,19 +300,19 @@ In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel, $D = \fr
 
 - $\alpha$: Es gibt ein "Trade-off" zwischen den beiden Fehlerarten. Bei einem kleineren $\alpha$ ist die Wahrscheinlichkeit, die Nullhypothese zu verwerfen, geringer und somit die Wahrscheinlichkeit, einen vorhandenen Effekt zu übersehen, höher, d.h. die Wahrscheinlichkeit des Fehlers der 2. Art ($\beta$) ist höher und die Teststärke ist geringer.
 
-- $n$: Ein größerer Stichprobengröße führt zu einer höheren Teststärke.
+- $n$: Eine größere Stichprobengröße führt zu einer höheren Teststärke.
 
 - Effektgröße: Je größer der wahre Effekt ist, desto höhere Teststärke hat ein Experiment.
 
 </div>
 
-Meistens bleibt unser $\alpha$ bei $5\%$ und wir können die wahre Effektgröße nicht verändern. Um eine größere Teststärke zu erreichen, erhöhen wir unseren Stichprobegröße.
+Meistens bleibt unser $\alpha$ bei $5\%$ und wir können die wahre Effektgröße nicht verändern. Um eine größere Teststärke zu erreichen, erhöhen wir unsere Stichprobegröße.
 
 ## Wichtigkeit der Teststärke
 
 Stellen wir uns die folgende Situation vor: Ein Medikament wird entwickelt, um die Schlafqualität zu verbessern. Um die Schlafqualität zu quantifizieren, beurteilen die Teilnehmer, wie sie sich mit ihrem Schlaf fühlen, indem sie eine Skala von 0 (schlecht) bis 10 (fantastisch) verwenden. Die Qualität wird mehrmals vor und nach der Einnahme des Medikaments gemessen. Für jeden Teilnehmer werden Mittelwerte der Bewertungen über ein Zeitinterval (vor vs. nach Einnahme) berechnet. 
 
-Vor der Einnahme des Medikaments ist der Erwartungswert der Schlafqualität $Y_0=5$ und der Effekt des Medikaments kann man eigentlich vernachlässigen, nämlich, der Erwartungswert nach der Einnahme ist $Y=5.1$ und der Effekt $\mu = 0.1$. Wir nehmen zusätzlich an, dass die wahre Standardabweichung des Effekts als $\sigma=2$ bekannt ist. Daher sind sowohl der rohe Effekt als auch die standardisierte Effektgröße sehr klein, $\mu = 0,1$ und $D = \frac{0,1}{2} = .05$. Wenn 20 Forschungsgruppen mit jeweils $n=100$ Teilnehmern untersuchen, ob dieses Medikament eine Wirkung hat ($H_0: \mu = \mu_0 = 0$), könnten ihre Daten wie folgt aussehen:
+Vor der Einnahme des Medikaments ist der Erwartungswert der Schlafqualität $Y_0=5$ und der Effekt des Medikaments kann man eigentlich vernachlässigen, nämlich, der Erwartungswert nach der Einnahme ist $Y=5.1$ und der Effekt $\mu = 0.1$. Wir nehmen zusätzlich an, dass die wahre Standardabweichung des Effekts als $\sigma=2$ bekannt ist. Daher sind sowohl der rohe Effekt als auch die standardisierte Effektgröße sehr klein, $\mu = 0.1$ und $D = \frac{0.1}{2} = 0.05$. Wenn 20 Forschungsgruppen mit jeweils $n=100$ Teilnehmern untersuchen, ob dieses Medikament eine Wirkung hat ($H_0: \mu = \mu_0 = 0$), könnten ihre Daten wie folgt aussehen:
 
 ```{r class.source = 'fold-hide', fig.align='center', fig.width=10}
 
@@ -356,7 +375,7 @@ abline(h = mu_0, col = "darkgrey", lty = 2, lwd = 2)
 
 Die soliden Kreise in der Grafik stellen die erzielten Effekte in den 20 Experimenten  dar, und die Fehlerbalken veranschaulichen das $95\%$-Konfidenzintervall. Die dunkelgraue Linie zeigt "Null-Effekt" an. Die rote Farbe wird für Experimente mit einem signifikanten Ergebnis im zweiseitigen $t$-Test verwendet und die schwarze für diejenigen mit einem nicht signifikanten Ergebnis.
 
-Wie die Grafik zeigt, ist nur ein Experiment signifikant. Dies scheint intuitiv zu sein, da der wahre Effekt sehr klein ist, jedoch wir können dies auch mit Hilfe von Power-Analyse erklären: 
+Wie die Grafik zeigt, ist nur ein Experiment signifikant. Dies scheint intuitiv zu sein, da der wahre Effekt sehr klein ist. Wir können dies auch mit Hilfe von Power-Analyse erklären: 
 
 ```{r}
 power.t.test(n = n, delta = mu, sd = sigma, 
@@ -375,11 +394,11 @@ ex_dat
 
 ```
 
-Der beobachtete Effekt in diesem Experiment ist $\bar{x} \ca. 0,59$ und der Cohen's $d \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
+Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
 
-Während es sehr schwierig ist, in einem Experiment mit geringer Teststärke ein signifikantes Ergebnis zu erzielen, überschätzt ein signifikantes Ergebnis aus einem solchen Experiment den Effekt deutlich. Dies erklärt genau, warum das "$p$-Hacking" für die Wissenschaft schädlich ist, bei dem Forscher ein Experiment so lange wiederholen (bzw. die Stichprobengröße jedes Mal erhöhen), bis das Ergebnis signifikant ist, und nur dieses "glänzende" Ergebnis zeigen.
+Während es sehr schwierig ist, die Nullhypothese in einem Experiment mit geringer Teststärke zu verwerfen, liefert ein signifikantes Ergebnis eine deutliche Überschätzung des Effekts. Dies erklärt genau, warum das "$p$-Hacking" für die Wissenschaft schädlich ist, bei dem Forscher ein Experiment so lange wiederholen (bzw. die Stichprobengröße jedes Mal erhöhen), bis das Ergebnis signifikant ist, und nur dieses "glänzende" Ergebnis zeigen.
 
-Um dies zu vermeiden, sollen die Forscher bewusst eine relevante Effektgröße festlegen und diese bei der Planung des Experiments verwenden. Insbesondere können sie mit Hilfe der Power-Analyse entscheiden, wie viele Teilnehmer sie erheben möchten, um ein signifikantes Ergebnis mit großer Teststärke zu erhalten.
+Um dies zu vermeiden, sollen die Forscher bewusst eine relevante Effektgröße festlegen und diese bei der Planung des Experiments verwenden. Insbesondere können sie mit Hilfe der Power-Analyse entscheiden, wie viele Teilnehmer sie erheben sollen, um ein signifikantes Ergebnis mit großer Teststärke zu erhalten.
 
 ### Power-Analyse für die Versuchsplanung
 
