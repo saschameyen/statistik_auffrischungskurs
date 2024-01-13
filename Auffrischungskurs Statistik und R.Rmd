@@ -166,7 +166,7 @@ X <- data.frame(outcome = c(1, 2, 3, 4), probability = c(0.4, 0.2, 0.3, 0.1))
 
 # Visualize --------------------------------------------------------------------
 
-N <- 1
+N <- 100
 M <- get_n_times_convolved_random_variable(N, X)
 xlim <- c(M$outcome[min(which(cumsum(M$probability) > .01))],
           M$outcome[max(which(cumsum(M$probability) < .999))+1])
@@ -608,7 +608,7 @@ dat <- read.table("simulated_health_dat.csv")
 # summary(dat)
 
 # Effect of treatment B for men
-men_dat <- dat[dat$sex_1 == 1, ]
+men_dat <- dat[dat$sex_1 == 1 & dat$treatment_b == 1, ]
 men_B_dat <- aggregate(data = men_dat,
                        health ~ part_id * post,
                        mean)
