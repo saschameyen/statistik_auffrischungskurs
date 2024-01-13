@@ -1339,6 +1339,65 @@ Vorsichtig bei der Interpretation: Wir zeigen hier einen korrelativen, linearen 
 
 Um eine Kausation zu belegen, ist zufälliges Bestimmen (Randomisieren) der unabhängigen Variable notwendig: Wenn dann weiterhin ein statistischer Effekt vorliegt, ist eine Kausation der unabhängigen Variable auf die abhängige Variable gegeben.
 
+Die Parameter in einer Regression können wir aber auch mit $t$-Tests testen.
+
+```{r}
+summary(model)
+```
+
+## Logistische Regression
+
+Statt der linearen Funktion $Y_i = \alpha + \beta \cdot X_i + \epsilon_i$ können wir auch nichtlineare Funktionen schätzen. Dabei verwenden wir eine nichtlineare Funktion $g^{-1}$, die den nichtlinearen Zusammenhang ausdrückt: $Y_i = g^{-1}(\alpha + \beta \cdot X_i) + \epsilon_i$. Diese Modelle nennen wir generalisierte, lineare Modelle (generalized linear models, GLM).
+
+Wir betrachten ein konkretes Beispiel bei dem $g^{-1}(\alpha + \beta \cdot X_i) = \frac{1}{1 + e^{-(\alpha + \beta \cdot X_i)}}$ — diese Funktion heißt logistische Funktion. Diese Funktion sagt Wahrscheinlichkeiten vorher: Für jedes $X_i$ ist $p_i = g^{-1}(\alpha + \beta \cdot X_i)$ die vorhergesagte Wahrscheinlichkeit, dass $Y_i = 1$. Die Parameter, oder Koeffizienten, $\alpha$ und $\beta$ werden so geschätzt, dass die Likelihood für die Daten maximal ist: $\mathcal{L} = \prod\limits_{i,\,Y_i = 1} p_i \cdot \prod\limits_{i,\,Y_i = 0} (1 - p_i)$. (Dafür gibt es spezielle Algorithmen, die die optimalen Werte finden, auf die wir hier nicht eingehen.) Nehmen wir zum Beispiel an, dass $X_i$ das Alter von verschiedenen Patienten ist und $Y_i$ gibt an, ob der Patient ein Medikament verschrieben bekommen hat ($Y_i = 1$) oder nicht ($Y_i = 0$).
+
+```{r}
+set.seed(2024-01-13)
+
+# Underlying parameters
+logistic <- function(x, alpha, beta) { 1/(1 + exp(-(alpha + beta * x))) }
+
+# Simulate data
+n <- 50
+x <- rnorm(n, mean = 40, sd = 15)
+y <- rbinom(n, 1, logistic(x, alpha = -8, beta = 0.2))
+dat <- data.frame(x = x,
+                  y = y)
+
+# Estimate logistic regression
+model <- glm(data = dat,
+             y ~ x,
+             family = "binomial")
+estimated_alpha <- model$coefficients[1]
+estimated_beta  <- model$coefficients[2]
+
+# Visualize
+par(mar = c(5, 5, 1, 1))
+plot(dat$x, dat$y,
+     xlab = "X (Independent Variable, continuous)",
+     ylab = "Y (Dependent Variable, binary)",
+     cex.lab  = 1.75,
+     cex.axis = 1.5,
+     cex      = 2)
+xs <- seq(min(dat$x), max(dat$x), .01)
+
+points(xs, logistic(xs, alpha = -8, beta = 0.2), 
+       type = "l", lwd = 5, col = "darkgray")
+
+points(xs, logistic(xs, estimated_alpha, estimated_beta), 
+       type = "l", lwd = 5)
+```
+
+Die Modell Parameter werden wie bei der Regression wieder getestet wie bei einem $t$ Test. Exakterweise, wird dieser Test Wald-Test genannt und man schreibt $z$-Werte, weil die approximative Normalverteilung (statt der $t$-Verteilung) verwendet wird.
+
+```{r}
+# Output model estimates
+summary(model)
+```
+
+> In a logistic regression model, we found that age increases the risk of being prescripted medication ($b = 0.27$, $SE = 0.08$, $p = .001$).
+
+
 ## Mehrfaktorielle ANOVA
 
 Meistens werden ANOVAs durchgeführt, wenn mehrere Faktoren (unabhängige Variablen) zugleich eine abhängige Variable beeinflussen. Dadurch lassen sich dann Interaktionseffekte beschreiben, also dass es auf die konkrete Kombination von unabhängigen Variablen ankommt. Die Grundannahmen bleiben wie zuvor. Hier ein Beispiel, in dem Geschlecht und Medikation einen Interaktionseffekt zeigen.
@@ -1524,4 +1583,10 @@ print(ezANOVA(data = dat,
 
 Den Rest des Kurses verbringen wir damit, eure Datensätze zu betrachten. Wendet die Tests, die wir bis jetzt gelernt haben an, visualisiert die Daten und schreibt Ergebnissätze. Wir helfen euch dabei!
 
-...
+Falls Du keinen eigenen Datensatz hast, an dem Du gerade arbeitest, kannst Du unsere Datensätze verwenden. Diese stammen aus Experimenten, in denen Probanden in jedem Trial Prime und Target Stimuli gesehen haben. Die Stimuli waren Zahlen zwischen 1 und 9, wie in den Spalten `prime` und `target` definiert. Probanden sollten in einer Aufgaben (`om1601_rttask_all.dat`) so schnell wie möglich eine Taste drücken, die anzeigt, ob der Target Stimulus größer oder kleiner als die Zahl 5 war. In einer zweiten Aufgabe (`om1601_perc_all.dat`) sollten sie eine Taste drücken, die anzeigt, ob der Prime Stimulus größer oder kleiner als 5 war — das war wesentlich schwieriger weil der Prime nur für wenige Millisekunden angezeigt wurde, deswegen interessiert uns hier nicht die Reaktionszeit `RT` sondern ob Probanden richtig lagen oder nicht `key_error`.
+
+* Gab es im Reaktionszeitdatensatz einen Effekt von Kongruenz (`congruency`), alsob davon, dass Prime und Target beider größer oder beide kleiner als 5 waren vs. einer kleiner und einer größer?
+
+* Konnten Probanden den Prime überzufällig häufig (mehr als 50\%) richtig erkennen?
+
+* Gab einen Unterschied hinsichtlich der Erkennungsrate des Primes, je nach dem was das Target war?
