@@ -69,11 +69,11 @@ Die Wahrscheinlichkeit, die Nullhypothese abzulehnen wenn sie falsch ist, wird a
 
 Um die Teststärke eines Experiments mit gegebener Stichprobengröße zu berechnen, muss man von einer wahren Effektgröße (bzw. einem wahren Mittelwert) ausgehen. 
 
-Als Beispiel betrachten wir ein Experiment, in dem wir den Effekt einer speziellen Behandlung untersuchen. Eine Gruppe von $n=25$ Teilnehmern führt eine Aufgabe sowohl unter Kontroll- als auch unter Behandlungsbedingungen durch. Ihre Reaktionszeit (RT) wird gemessen. Die Differenzen der mittleren RTs werden für statistische Tests verwendet und können als normalverteilt angenommen werden. Zusätzlich nehmen wir an, dass die wahre Standardabweichung mit $\sigma = 150$ms bekannt ist.
+Als Beispiel betrachten wir ein Experiment, in dem wir den Effekt einer speziellen Behandlung untersuchen. Eine Gruppe von $n=25$ Teilnehmern führt eine Aufgabe sowohl unter Kontroll- als auch unter Behandlungsbedingungen durch. Ihre Reaktionszeit (RT) wird gemessen. Die Differenzen der mittleren RTs werden für statistische Tests verwendet und können als normalverteilt angenommen werden. Zusätzlich nehmen wir an, dass die wahre Standardabweichung mit $\sigma = 150$ ms bekannt ist.
 
 Um zu untersuchen, ob die Behandlung RTs beeinflussen, führen wir einen zweiseitigen $t$-Test durch, $H_0: \mu = \mu_0 = 0$ vs. $H_1: \mu \neq \mu_0$, mit einem Signifikanzniveau von $\alpha = .05$.
 
-Für jetzt wissen wir, dass der wahre Effekt $\mu = 80$ms sein sollte. Wie hoch ist die Wahrscheinlichkeit, in dem Experiment einen signifikanten Effekt zu beobachten, gegeben dass der wahre Effekt 80ms ist?
+Für jetzt wissen wir, dass der wahre Effekt $\mu = 80$ ms sein sollte. Wie hoch ist die Wahrscheinlichkeit, in dem Experiment einen signifikanten Effekt zu beobachten, gegeben dass der wahre Effekt 80ms ist?
 
 #### Alternative 1: Analytische Berechnung
 
