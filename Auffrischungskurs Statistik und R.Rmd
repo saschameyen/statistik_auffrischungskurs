@@ -166,7 +166,7 @@ X <- data.frame(outcome = c(1, 2, 3, 4), probability = c(0.4, 0.2, 0.3, 0.1))
 
 # Visualize --------------------------------------------------------------------
 
-N <- 1
+N <- 100
 M <- get_n_times_convolved_random_variable(N, X)
 xlim <- c(M$outcome[min(which(cumsum(M$probability) > .01))],
           M$outcome[max(which(cumsum(M$probability) < .999))+1])
@@ -507,16 +507,16 @@ for (i in 1:N) # Participant
                            pre         = (k == 1  )*1,
                            post        = (k == 2  )*1)
 
-      effect <- design$sex_0 * +0.2 + # Women's base health
-                design$sex_1 * -0.2 + # Men's base health
-                design$post * design$placebo * 0.1 + # Effect of placebo
-                design$post * design$treatment_a * 0.5 + # Effect of treatment A
-                design$post * design$treatment_b * 0.1 + # Effect of treatment B
-                design$post * design$treatment_b * design$sex_0 * -0.3 + # Effect of treatment B for women
-                design$post * design$treatment_b * design$sex_1 * +0.3 # Effect of treatment B for men
+      effect <- design$sex_0 * +0.4 + # Women's base health
+                design$sex_1 * -0.4 + # Men's base health
+                design$post * design$placebo * 0.2 + # Effect of placebo
+                design$post * design$treatment_a * 1 + # Effect of treatment A
+                design$post * design$treatment_b * 0.2 + # Effect of treatment B
+                design$post * design$treatment_b * design$sex_0 * -0.6 + # Effect of treatment B for women
+                design$post * design$treatment_b * design$sex_1 * +0.6 # Effect of treatment B for men
 
       design$sportiness <- sportiness[i]
-      design$health     <- 5 + 2 * (sportiness[i] + effect + rnorm(1, sd = 0.3) )
+      design$health     <- 5 + effect + rnorm(1, sd = 0.6) + 2 * sportiness[i]
 
       dat <- rbind(dat, design)
     }
@@ -608,7 +608,7 @@ dat <- read.table("simulated_health_dat.csv")
 # summary(dat)
 
 # Effect of treatment B for men
-men_dat <- dat[dat$sex_1 == 1, ]
+men_dat <- dat[dat$sex_1 == 1 & dat$treatment_b == 1, ]
 men_B_dat <- aggregate(data = men_dat,
                        health ~ part_id * post,
                        mean)
@@ -631,8 +631,416 @@ t.test(men_B_effect, mu = 0)
 ##     ## ##       ##    ##  ##  ##    ##  ##  ##     ## ##   ###
 ########  ########  ######  ####  ######  ####  #######  ##    ##
  -->
-
+ 
 # Entscheidungstheorie
+
+## Fehler 1. Art und Fehler 2. Art
+
+Bei statistischen Tests treffen wir eine Entscheidung darüber, ob eine Hypothese wahr ist oder nicht. Je nach Wahrheit kann unsere Entscheidung richtig oder falsch sein. Im Allgemeinen gibt es vier Fälle, die sowohl unsere Entscheidung ($\hat{X}$) als auch die Wahrheit ($X$) berücksichtigen.
+
+<center>
+<div style='width:50%'>
+
+|           |$X=1$  |$X=0$              |
+|:---:      |:-----:|:-----------------:|
+|$\hat{X}=1$|Hit    |False Alarm        |
+|$\hat{X}=0$|Miss   |Correct Rejection  |
+
+</div>
+</center>
+
+Bei frequentistischen Tests nehmen wir eine Nullhypothese als wahr an und prüfen, ob sie mit den erhobenen Daten übereinstimmt. Wir definieren einen Ablehnungsbereich so, dass er der Wahrscheinlichkeit ($\alpha$) entspricht, mit der wir die Nullhypothese ablehnen, gegeben dass sie wahr ist. Infolgedessen könnten wir die Nullhypothese fälschlicherweise ablehnen, obwohl sie wahr ist, oder sie fälschlicherweise beibehalten, obwohl sie falsch ist.
+
+<center>
+<div style='width:50%'>
+
+|                 |$H_0$ is true  |$H_0$ is false |
+|:---------------:|:-------------:|:-------------:|
+|$H_0$ ablehnen   |Richtig        |Fehler 1. Art  |
+|$H_0$ beibehalten|Fehler 2. Art  |Richtig        |
+
+</div>
+</center>
+
+Diese beiden Arten von Fehlern nennen wir Fehler 1. Art und Fehler 2. Art (engl. _Type-I error_ und _Type-II error_). Die Wahrscheinlichkeiten werden mit $\alpha$ und $\beta$ notiert.
+
+<div style="background-color:#DDDDFF;">
+
+**Fehler 1. Art und Fehler 2. Art**
+
+Wahrscheinlichkeit für Fehler 1. Art:
+\[\alpha = P(H_0 \text{ ablehnen wenn } H_0 \text{ ist wahr})\]
+
+Wahrscheinlichkeit für Fehler 2. Art:
+\[\beta = P(H_0 \text{ beibehalten wenn } H_0 \text{ ist falsch})\]
+
+</div>
+
+Um ein überzeugendes Experiment zu designen, muss man beide Fehlertypen berücksichtigen. Während man bei der Bestimmung von $\alpha$ der Konvention $\alpha \in \{.01, .05, .1\}$ folgen kann, ist es bei $\beta$ komplizierter.
+
+## Teststärke
+
+Die Wahrscheinlichkeit, die Nullhypothese abzulehnen wenn sie falsch ist, wird als Teststärke (engl. _power_) bezeichnet.
+
+<div style="background-color:#DDDDFF;">
+
+**Teststärke**
+
+\[ \text{Teststärke} 
+= P(H_0 \text{ verwerfen wenn } H_0 \text{ ist falsch})
+= 1 - \underbrace{P(H_0 \text{ beibehalten wenn } H_0 \text{ ist falsch})}_{\text{P(Fehler 2. Art)} = \beta} 
+= 1 -\beta \]
+
+</div>
+
+
+### Berechnung der Teststärke
+
+Um die Teststärke eines Experiments mit gegebener Stichprobengröße zu berechnen, muss man von einer wahren Effektgröße (bzw. einem wahren Mittelwert) ausgehen. 
+
+Als Beispiel betrachten wir ein Experiment, in dem wir den Effekt einer speziellen Behandlung untersuchen. Eine Gruppe von $n=25$ Teilnehmern führt eine Aufgabe sowohl unter Kontroll- als auch unter Behandlungsbedingungen durch. Ihre Reaktionszeit (RT) wird gemessen. Die Differenzen der mittleren RTs werden für statistische Tests verwendet und können als normalverteilt angenommen werden. Zusätzlich nehmen wir an, dass die wahre Standardabweichung mit $\sigma = 150$ ms bekannt ist.
+
+Um zu untersuchen, ob die Behandlung RTs beeinflussen, führen wir einen zweiseitigen $t$-Test durch, $H_0: \mu = \mu_0 = 0$ vs. $H_1: \mu \neq \mu_0$, mit einem Signifikanzniveau von $\alpha = .05$.
+
+Für jetzt wissen wir, dass der wahre Effekt $\mu = 80$ ms sein sollte. Wie hoch ist die Wahrscheinlichkeit, in dem Experiment einen signifikanten Effekt zu beobachten, gegeben dass der wahre Effekt 80ms ist?
+
+#### Alternative 1: Analytische Berechnung
+
+Für eine analytische Berechnung wäre eine Visualisierung hilfreich.
+
+```{r class.source = 'fold-hide', fig.align='center', fig.width=10}
+
+# Given: mu_0 = 0, mu = 80, sigma = 150, n = 25
+mu_0  <- 0
+mu    <- 80
+sigma <- 150
+n     <- 25
+alpha <- .05
+se    <- sigma / sqrt(n)
+M     <- mu_0 + 2.2 * se
+
+# Distribution Curves
+x <- seq(mu_0 - 5 * se, mu + 5 * se, .01)
+f <- dnorm(x, mean = mu_0, sd = se)
+plot(x, f, type = 'l', lwd = 3,
+     axes = F, xlab = '', ylab = '',
+     ylim = c(0, 1.3 * max(f)), xlim = c(mu_0 - 4 * se, mu + 4 * se))
+g <- dnorm(x, mean = mu, sd = se)
+points(x, g, type = 'l', col = "deepskyblue4", lwd = 3)
+
+# Mark of Distributions
+text(c(mu_0, mu), 1.1 * dnorm(mu_0, sd = se),
+     expression(mu[0], mu), col = c("black", "deepskyblue4"))
+
+# Right Rejection Area
+xcol <- seq(qnorm(1-alpha/2, sd = se), mu_0 + 5 * se, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred1", border = NA)
+text(mu_0 + 2.2 * se - 15, -.002, expression(alpha/2), xpd = T)
+arrows(mu_0 + 2.2 * se - 2, 0.0005, 
+       mu_0 + 2.2 * se - 12, -0.001, 
+       code = 0, lwd = 2)
+
+# Left Rejection Area
+xcol <- seq(mu_0 - 5 * se, qnorm(alpha/2, sd = se), .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred1", border = NA)
+text(mu_0 - 2 * se, -.002, expression(alpha/2), xpd = T)
+arrows(mu_0 - 2.1 * se, 0.0005, 
+       mu_0 - 2 * se, -0.001, 
+       code = 0, lwd = 2)
+
+# Right P Value
+xcol <- seq(M, mu_0 + 5 * se, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred4", border = NA, xpd = T)
+text(M + 15, -.002, expression(p/2), xpd = T)
+arrows(M + 5, 0.0003, 
+       M + 15, -0.001, 
+       code = 0, lwd = 2)
+
+# Left P Value
+xcol <- seq(mu_0 - 5 * se, -M, .001)
+fcol <- dnorm(xcol, mean = mu_0, sd = se)
+polygon(c(xcol, rev(xcol)), 
+        c(fcol*0, rev(fcol)),
+        col = "indianred4", border = NA, xpd = T)
+text(-M - 15, -.002, expression(p/2), xpd = T)
+arrows(-M - 5, 0.0003, 
+       -M - 15, -0.001, 
+       code = 0, lwd = 2)
+
+# Beta Area
+xcol <- seq(qnorm(alpha/2, sd = se), qnorm(1-alpha/2, sd = se), .001)
+gcol <- dnorm(xcol, mean = mu, sd = se)
+polygon(c(xcol, rev(xcol)),
+        c(gcol*0, rev(gcol)),
+        col = "skyblue", border = NA)
+text(mu - 1.3 * se, max(gcol)/4, expression(beta), xpd = T)
+
+# Mark of Critical Values
+arrows(qnorm(1-alpha/2, sd = se), 0, 
+       qnorm(1-alpha/2, sd = se), dnorm(mu_0, sd = se), 
+       lwd = 3, code = 0, lty = 2)
+text(qnorm(1-alpha/2, sd = se), 1.1 * dnorm(mu_0, sd = se),
+     expression(x[crit]))
+
+arrows(qnorm(alpha/2, sd = se), 0, 
+       qnorm(alpha/2, sd = se), dnorm(mu_0, sd = se), 
+       lwd = 3, code = 0, lty = 2)
+text(qnorm(alpha/2, sd = se), 1.1 * dnorm(mu_0, sd = se),
+     expression(x[crit]))
+
+# Mark of Data Point
+text(M, -.002, expression(bar(x)), xpd = T)
+arrows(M, 0, 
+       M, -0.001, 
+       code = 0, lwd = 2)
+
+```
+
+Der kritische und der beobachtete $X$-Wert können in einen kritischen und einen beobachteten $T$-Wert umgewandelt werden, mit dem wir die Teststärke berechnen können. Wenn der beobachtete $X$-Wert mehr auf der Seite der Alternative liegt als der kritische $X$-Wert (bzw. wenn der beobachtete $T$-Wert mehr auf der Seite der Alternative liegt als der kritische $T$-Wert), wird die Nullhypothese abgelehnt. Andernfalls sollte die Nullhypothese beibehalten werden.
+
+Gegeben $\sigma=150$ und $n=25$, wir können den Standardfehler berechnen, $SE = \frac{\sigma}{\sqrt{n}} = \frac{150}{\sqrt{25}} = 30$. Der kritische $T$-Wert wird durch das Signifikanzniveau und die Stichprobengröße bestimmt, $t_{\text{krit}} = t_{.975}(24) = 2.07$. Dies ergibt kritische $X$-Werte, $x_{\text{krit}} = \mu_0 \pm SE \cdot t_{\text{krit}} = 0 \pm 30 \cdot 2.07 = \pm `r 30*2.07`$.
+
+```{r echo = F, eval = F}
+qt(.975, 24)
+30 * 2.07
+pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + 
+  pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)
+```
+
+Da wir nun wissen, dass $X$ aus der wahren Verteilung $\mathcal{N} (\mu = 80, \sigma^2 = 30^2)$ kommt, betrachten wir die Wahrscheinlichkeit, dass der Wert $X$ extremer ist als die kritischen $X$-Werten, so dass wir die Null im Hypothesentest verwerfen können. Das ist, $P(|\bar{X}| > |x_\text{krit}|) = P(|\bar{X}| > 62.1)$. Dies kann in R durch `pnorm(q = -62.1, mean = 80, sd = 30, lower.tail = T) + pnorm(q = 62.1, mean = 80, sd = 30, lower.tail = F)` berechnet werden, was etwa $72\%$ entspricht. Umgekehrt beträgt die Wahrscheinlichkeit des Fehlers der 2. Art in diesem Experiment $\beta = 1 - 72\% = 28\%$. Es ist also sehr wahrscheinlich, in dieser Studie einen Effekt der Behandlung nachzuweisen.
+
+#### Alternative 2: Simulation
+
+Da wir den wahren Effekt kennen, können wir den gesamten Prozess simulieren, indem wir zufällige Daten aus der wahren Verteilung ziehen. Weil die Teststärke die Wahrscheinlichkeit beschreibt, einen Effekt richtig zu finden, können wir sie mit der relativen Häufigkeit eines signifikanten Ergebnisses in den simulierten Daten schätzen.
+
+```{r}
+
+set.seed(1)
+
+# Given: mu_0 = 0, mu = 80, sigma = 150, n = 25
+mu_0  <- 0
+mu    <- 80
+sigma <- 150
+n     <- 25
+alpha <- .05
+
+# Simulation
+nsim  <- 1e5
+test_results <- replicate(nsim, {
+  x <- rnorm(n, mu, sigma)
+  p_value <- t.test(x, mu = mu_0, 
+                    alternative = "two.sided", 
+                    conf.level = 1 - alpha)$p.value
+  ifelse (p_value < alpha, 1, 0)
+})
+
+# Estimation
+(test_power <- mean(test_results))
+
+```
+
+#### Alternative 3: R-Funktion
+
+Es gibt einige eingebaute R-Funktionen für die Berechnung von Teststärke.
+
+
+<div style="background-color:#DDDDFF;">
+
+**R-Funktionen für Teststärke**
+
+- Für $t$-Test: `power.t.test`
+- Für ANOVA: `power.anova.test`
+
+Erklärung der Argumente:
+
+- `n`: Stichprobengröße jeder Gruppe (wichtig für Zweistichprobentests: die Stichprobengröße von jeder Gruppe wird als gleich angenommen)
+- `delta`: wahre Differenz der Mittelwerte
+- `sd`: Standardabweichung
+- `power`: Teststärke
+- `sig.level`: $\alpha$-Wert
+- `type`: `two.sample`/`one.sample`/`paired` (für $t$-Test)
+- `alternative`: `two.sided`/`one.sided` (für $t$-Test)
+
+</div>
+
+Wenn die Teststärke zu berechnen ist, setzen wir das entsprechende Argument auf `NULL`. Für unser Beispiel können wir die Teststärke wie folgt berechnen:
+
+```{r}
+power.t.test(n = 25, delta = 80, sd = 150, 
+             power = NULL, sig.level = .05, 
+             alternative = 'two.sided', type = 'one.sample')
+```
+
+
+#### Schätzung der Effektgröße
+
+Gerade haben wir angenommen, dass die wahre Verteilung bekannt ist. Dies ist jedoch in der Realität oft nicht der Fall. Daher für die Berechnung der Teststärke müssen wir einen plausiblen Wert oder einen Wert von Interesse (in der Regel den kleinsten Wert von Interesse) wählen. Um das Ergebnis zu interpretieren, beziehen wir uns auf den gewählten Wert. Wir würden zum Beispiel schreiben:
+
+> For an effect $\mu \geq a$, the test power is at least $b \%$.
+
+Manchmal stellen Forscher ihre Nullhypothese nicht mit einem konkreten Mittelwert auf, sondern mit einer standardisierten Effektgröße. Hierfür wird häufig Cohens' $d$ verwendet, d.h. die Differenz der Mittelwerte, standardisiert mit der Standardabweichung.
+
+<div style="background-color:#DDDDFF;">
+
+**Cohen's $d$**
+
+Für Einstichprobentests:
+
+\[D = \frac{|\mu - \mu_0|}{\sigma}\]
+\[d = \frac{|\bar{x} - \mu_0|}{s}\]
+
+Für Zweistichprobentests:
+
+\[D = \frac{|\mu_X - \mu_Y|}{\sigma}\]
+\[d = \frac{|\bar{x} - \bar{y}|}{s_\text{pooled}} ~~~
+\left( s_\text{pooled} = \sqrt{ \frac{(n_1-1)s_1^2 + (n_2-1)s_2^2} {n_1+n_2-2} } \right) \]
+
+Interpretation:
+
+<center>
+<div style="width:30%">
+| $d$  | Interpretation   |
+|:----:|:----------------:|
+| 0.20 | Klein            |
+| 0.50 | Mittel           |
+| 0.80 | Groß             |
+</div>
+</center>
+
+</div>
+
+In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel, $D = \frac{\mu - \mu_0}{\sigma} = \frac{80 - 0}{150} \approx 0.53$.
+
+
+## Einflussfaktoren von Teststärke
+
+<div style="background-color:#DDDDFF;">
+
+**Einflussfaktoren von Teststärke**
+
+- $\alpha$: Es gibt ein "Trade-off" zwischen den beiden Fehlerarten. Bei einem kleineren $\alpha$ ist die Wahrscheinlichkeit, die Nullhypothese zu verwerfen, geringer und somit die Wahrscheinlichkeit, einen vorhandenen Effekt zu übersehen, höher, d.h. die Wahrscheinlichkeit des Fehlers der 2. Art ($\beta$) ist höher und die Teststärke ist geringer.
+
+- $n$: Eine größere Stichprobengröße führt zu einer höheren Teststärke.
+
+- Effektgröße: Je größer der wahre Effekt ist, desto höhere Teststärke hat ein Experiment.
+
+</div>
+
+Meistens bleibt unser $\alpha$ bei $5\%$ und wir können die wahre Effektgröße nicht verändern. Um eine größere Teststärke zu erreichen, erhöhen wir unsere Stichprobegröße.
+
+## Wichtigkeit der Teststärke
+
+Stellen wir uns die folgende Situation vor: Ein Medikament wird entwickelt, um die Schlafqualität zu verbessern. Um die Schlafqualität zu quantifizieren, beurteilen die Teilnehmer, wie sie sich mit ihrem Schlaf fühlen, indem sie eine Skala von 0 (schlecht) bis 10 (fantastisch) verwenden. Die Qualität wird mehrmals vor und nach der Einnahme des Medikaments gemessen. Für jeden Teilnehmer werden Mittelwerte der Bewertungen über ein Zeitinterval (vor vs. nach Einnahme) berechnet. 
+
+Vor der Einnahme des Medikaments ist der Erwartungswert der Schlafqualität $5$ und der Effekt des Medikaments kann man eigentlich vernachlässigen, nämlich, der Erwartungswert nach der Einnahme ist $5.1$ und der Effekt $\mu = 0.1$. Wir nehmen zusätzlich an, dass die wahre Standardabweichung des Effekts als $\sigma=2$ bekannt ist. Daher sind sowohl der rohe Effekt als auch die standardisierte Effektgröße sehr klein, $\mu = 0.1$ und $D = \frac{0.1}{2} = 0.05$. Wenn 20 Forschungsgruppen mit jeweils $n=100$ Teilnehmern untersuchen, ob dieses Medikament eine Wirkung hat ($H_0: \mu = \mu_0 = 0$), könnten ihre Daten wie folgt aussehen:
+
+```{r class.source = 'fold-hide', fig.align='center', fig.width=10}
+
+set.seed(1)
+
+# Given: mu = 0.1, sigma = 2, n = 100
+nsim  <- 20
+mu    <- 0.1
+mu_0  <- 0
+sigma <- 2
+n     <- 100
+SE    <- sigma/sqrt(n)
+alpha <- .05
+
+# Initialisation
+dat <- data.frame(index = NA,
+                  M     = NA,
+                  sd    = NA,
+                  se    = NA,
+                  d     = NA,
+                  p     = NA)[-1, ]
+
+# Simulation
+for (i in 1:nsim) {
+  x  <- rnorm(n, mu, sigma)
+  se <- sd(x)/sqrt(n)
+  d  <- mean(x)/sd(x)
+  p  <- t.test(x, mu = mu_0, 
+               alternative = "two.sided", 
+               conf.level = 1 - alpha)$p.value
+  
+  new_dat <- data.frame(index = i, 
+                        M     = mean(x),
+                        sd    = sd(x),
+                        se    = se,
+                        d     = d,
+                        p     = p)
+  dat <- rbind(dat, new_dat)
+}
+
+# Plot
+par(cex = 1.2, mar = c(3, 3, 0, 0), mgp = c(2, 0.7, 0))
+ylim  <- c(min(dat$M - 2 * dat$se), max(dat$M + 2 * dat$se))
+color <- ifelse(dat$p < alpha, "red", "black")
+plot(M ~ index, dat, ylim = ylim, type = "n", 
+     ylab = "Effect", xlab = "Research Group")
+
+# Mean values and confidence intervals
+points(M ~ index, dat, pch = 16, col = color)
+t_CI_q <- qt(1-alpha/2, n-1)
+arrows(dat$index, dat$M - t_CI_q * dat$se, 
+       dat$index, dat$M + t_CI_q * dat$se, 
+       length = 0.05, angle = 90, 
+       code = 3, col = color, lwd = 2)
+
+# Mark for critical value
+abline(h = mu_0, col = "darkgrey", lty = 2, lwd = 2)
+
+```
+
+Die soliden Kreise in der Grafik stellen die erzielten Effekte in den 20 Experimenten  dar, und die Fehlerbalken veranschaulichen das $95\%$-Konfidenzintervall. Die dunkelgraue Linie zeigt "Null-Effekt" an. Die rote Farbe wird für Experimente mit einem signifikanten Ergebnis im zweiseitigen $t$-Test verwendet und die schwarze für diejenigen mit einem nicht signifikanten Ergebnis.
+
+Wie die Grafik zeigt, ist nur ein Experiment signifikant. Dies scheint intuitiv zu sein, da der wahre Effekt sehr klein ist. Wir können dies auch mit Hilfe von Power-Analyse erklären: 
+
+```{r}
+power.t.test(n = n, delta = mu, sd = sigma, 
+             power = NULL, sig.level = alpha, 
+             alternative = 'two.sided', type = 'one.sample')
+```
+
+Da die Experimente nur eine geringe Teststärke haben, ist es sehr schwierig, einen vorhandenen Effekt nachzuweisen (obwohl er winzig ist, ist er existent).
+
+Und was passiert bei dem einen Experiment, das signifikant ist?
+
+```{r class.source = 'fold-hide'}
+
+ex_dat <- dat[which.max(dat$M-dat$se), ]
+ex_dat
+
+```
+
+Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
+
+Während es sehr schwierig ist, die Nullhypothese in einem Experiment mit geringer Teststärke zu verwerfen, liefert ein signifikantes Ergebnis eine deutliche Überschätzung des Effekts. Dies erklärt genau, warum das "$p$-Hacking" für die Wissenschaft schädlich ist, bei dem Forscher ein Experiment so lange wiederholen (bzw. die Stichprobengröße jedes Mal erhöhen), bis das Ergebnis signifikant ist, und nur dieses "glänzende" Ergebnis zeigen.
+
+Um dies zu vermeiden, sollen die Forscher bewusst eine relevante Effektgröße festlegen und diese bei der Planung des Experiments verwenden. Insbesondere können sie mit Hilfe der Power-Analyse entscheiden, wie viele Teilnehmer sie erheben sollen, um ein signifikantes Ergebnis mit großer Teststärke zu erhalten.
+
+### Power-Analyse für die Versuchsplanung
+
+Wenn man die Teststärke auf einen bestimmten Wert setzt, kann man mit den eingebauten R-Funktionen die Stichprobengröße berechnen, die für ein signifikantes Ergebnis erforderlich ist.
+
+Für unser obiges Beispiel werden beispielsweise 3142 Teilnehmer benötigt, um eine Teststärke von $80\%$ zu erreichen. 
+
+```{r}
+power.t.test(n = NULL, delta = 0.1, sd = 2, power = .8, sig.level = 0.05,
+             alternative = 'two.sided', type = 'one.sample')
+```
+
+## Zusammenfassung
 
 Der typische Hypothesentest nach Fisher betrachtet also nur die Abweichung von der Nullhypothese und schließt, falls die Abweichung groß genug ist, dass die Nullhypothese unplausibel ist und somit abgelehnt wird. Nichts weiter. Wenn die Nullhypothese nicht abgelehnt wird, heißt das nicht, dass wir sie bestätigt haben.
 
@@ -940,6 +1348,8 @@ Ms   <- c(mean(x), mean(y))
 SEMs <- c(sem(x), sem(y))
 
 # Barplot
+barplot(Ms)
+par(mar = c(5, 5, 1, 1))
 bx <- barplot(Ms,
               xlim     = c(-0.1, 0.62),
               ylim     = c(4, 8),
@@ -947,8 +1357,8 @@ bx <- barplot(Ms,
               width    = 0.2,
               col      = c("gray85", "gray25"),
               ylab     = "Health Score",
-              cex.lab  = 1.5,
-              cex.axis = 1.5)
+              cex.lab  = 2,
+              cex.axis = 1.75)
 box()
 
 # Legend
@@ -987,8 +1397,10 @@ sem <- function(x) { sd(x)/sqrt(length(x)) }
 Ms   <- c(mean(x), mean(y))
 SEMs <- c(sem(x), sem(y))
 
-# Barplot
+# Histogram
 breaks <- seq(0, 10, 1/3)
+hist(x)
+par(mar = c(5, 5, 2, 2))
 hist(x,
      main     = "Histogram of Health Scores",
      xlab     = "Health Score",
@@ -1006,7 +1418,8 @@ hist(y,
 
 # Legend
 legend("topright",
-       fill   = c(rgb(1, 0, 0, .2), rgb(0, 0, 1, .2)),
+       fill   = c(rgb(1, 0, 0, .2), 
+                  rgb(0, 0, 1, .2)),
        legend = c("Women", "Men"), 
        cex    = 2)
 ```
@@ -1054,7 +1467,8 @@ plot(mean_dat$post + x_jitter,
      ylab     = "Health Score",
      cex.lab  = 1.5,
      cex.axis = 1.25)
-axis(1, at = c(0, 1), labels = c("Pre", "Post"),
+axis(1, at = c(0, 1), 
+     labels = c("Pre", "Post"),
      cex.axis = 1.5)
 
 # Lines between points
@@ -1080,7 +1494,9 @@ arrows(mean_dat$post + x_jitter,
 
 # Legend
 legend("topleft",
-       legend = c("Placebo", "Treatment A", "Treatment B"),
+       legend = c("Placebo", 
+                  "Treatment A", 
+                  "Treatment B"),
        col    = c(black, orange, sky_blue),
        lty    = 1:3, 
        pch    = 16,
