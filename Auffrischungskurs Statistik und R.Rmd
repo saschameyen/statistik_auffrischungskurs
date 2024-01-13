@@ -63,7 +63,6 @@ Wir wissen wie gesagt nicht, was im Einzelfall passieren wird, aber wir können 
 $$
   E(X) = \sum_{x} xf(x)  = 1 \cdot \frac{1}{6} + 2 \cdot \frac{1}{6} + \ldots + 6 \cdot \frac{1}{6} = 3.5 ~\text{.}
 $$
-<!-- LL: changed because: either sum over i with f(xi)xi or sum over x with f(x)x -->
 
 Für später: Die Varianz und Standardabweichung sind
 
@@ -109,8 +108,6 @@ $$
 $$
 
 Außerdem gilt nach dem zentralen Grenzwertsatz, dass der Mittelwert normalverteilt ist. (Details: https://saschameyen.com/pdfs/Central-Limit-Theorem.html)
-
-<!-- LL hasn't check this pdf -->
 
 $$
     \lim_{N\rightarrow \infty} \bar{X}_N \sim \mathcal{N}
@@ -186,7 +183,6 @@ points(M$outcome, f/sum(f),
        type = 'l', col = 'orange', lwd = 4)
 ```
 
-<!-- LL: question - in comments it says normal distribution is added but actually you are not adding the smooth curve but only the densities of the four points. Is it a mistake or designed? -->
 
 </details>
 
@@ -324,11 +320,6 @@ $$
   SEM = \frac{SD(X)}{\sqrt{N}} ~~~ \overset{\text{in der Praxis}}{\longrightarrow} ~~~ SEM = \frac{S_{N}}{\sqrt{N}} .
 $$
 
-<!-- LL: 
-I would always tend to interpret an arrow as "getting to a limit" when the item on the right side is a number.. So I changed the notation here (and below). If you like the old version better, here the old codes for you to copy: 
-  \text{in der Praxis:} ~SEM = \frac{SD(X)}{\sqrt{N}} \rightarrow SEM = \frac{S_{N}}{\sqrt{N}} .
--->
-
 Wir müssen dafür korrigieren, dass wir den SEM schätzen, denn sonst sind wir uns in unseren Aussagen zu sicher. Dafür ersetzen wir die Normalverteilung ($z$) mit der $t$-Verteilung, die im sozusagen die Rolle der Normalverteilung mit geschätzter Varianz einnimmt. 
 
 In der Realität kennen wir auch den Erwartungswert nicht. Über diesen wollen wir ja gerade einen Hypothesentest durchführen. Deshalb ersetzen wir ihn durch unseren hypothetisierten Erwartungwert $\mu_0$:
@@ -336,11 +327,6 @@ In der Realität kennen wir auch den Erwartungswert nicht. Über diesen wollen w
 $$
   E(X) ~~~ \overset{\text{in der Praxis}}{\longrightarrow} ~~~ \mu_0 .
 $$
-
-<!-- LL: 
-old version
-  E(X) \rightarrow}  \mu_0 .
--->
    
 ### Eine Stichprobe
 
@@ -608,19 +594,83 @@ dat <- read.table("simulated_health_dat.csv")
 # summary(dat)
 
 # Effect of treatment B for men
-men_dat <- dat[dat$sex_1 == 1 & dat$treatment_b == 1, ]
-men_B_dat <- aggregate(data = men_dat,
-                       health ~ part_id * post,
-                       mean)
+men_B_dat <- dat[dat$sex_1 == 1 & dat$treatment_b == 1, ]
+men_B_mean_dat <- aggregate(data = men_B_dat,
+                            health ~ part_id * post,
+                            mean)
 
 # Get one effect for each male participant
-men_B_post   <- men_B_dat$health[men_B_dat$post == 1]
-men_B_pre    <- men_B_dat$health[men_B_dat$post == 0]
+men_B_post   <- men_B_mean_dat$health[men_B_mean_dat$post == 1]
+men_B_pre    <- men_B_mean_dat$health[men_B_mean_dat$post == 0]
 men_B_effect <- men_B_post - men_B_pre
 
 # Hypothesis test
 t.test(men_B_effect, mu = 0)
 ```
+
+<details><summary>Lösungen</summary>
+
+```{r}
+# Load data
+dat <- read.table("simulated_health_dat.csv")
+
+# Generally: Men healthier than women? ----------------------------------------
+sex_dat <- aggregate(data = dat,
+                     health ~ part_id * sex_0,
+                     mean)
+
+t.test(sex_dat$health[sex_dat$sex_0 == 0],
+       sex_dat$health[sex_dat$sex_0 == 1])
+
+# Placebo: effect? ------------------------------------------------------------
+placebo_dat <- aggregate(data = dat[dat$placebo == 1, ],
+                         health ~ part_id * post,
+                         mean)
+
+placebo_effects <- placebo_dat$health[placebo_dat$post == 1] -
+                   placebo_dat$health[placebo_dat$post == 0]
+t.test(placebo_effects)
+
+# Treatment A: effect? --------------------------------------------------------
+treatment_A_dat <- aggregate(data = dat[dat$treatment_a == 1,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_A <- treatment_A_dat$health[treatment_A_dat$post == 1] -
+             treatment_A_dat$health[treatment_A_dat$post == 0]
+t.test(effects_A)
+
+# Treatment A: effect larger than placebo effect? -----------------------------
+effect_A_beyond_placebo <- effects_A - placebo_effects
+t.test(effect_A_beyond_placebo)
+
+# Treatment B: effect? --------------------------------------------------------
+treatment_B_dat <- aggregate(data = dat[dat$treatment_b == 1,],
+                             health ~ part_id * post,
+                             mean)
+
+effects_B <- treatment_B_dat$health[treatment_B_dat$post == 1] -
+             treatment_B_dat$health[treatment_B_dat$post == 0]
+t.test(effects_B)
+
+# Treatment B: effect larger than placebo effect? -----------------------------
+effect_B_beyond_placebo <- effects_B - placebo_effects
+t.test(effect_B_beyond_placebo)
+
+# Treatment B: effect for women? ----------------------------------------------
+women_B_dat <- dat[dat$sex_1 == 0 & dat$treatment_b == 1, ]
+women_B_mean_dat <- aggregate(data = women_B_dat,
+                              health ~ part_id * post,
+                              mean)
+
+women_B_post   <- women_B_mean_dat$health[women_B_mean_dat$post == 1]
+women_B_pre    <- women_B_mean_dat$health[women_B_mean_dat$post == 0]
+women_B_effect <- women_B_post - women_B_pre
+
+t.test(women_B_effect, mu = 0)
+```
+
+</details>
 
 <!-- 
 ########  ########  ######  ####  ######  ####  #######  ##    ##
@@ -656,8 +706,8 @@ Bei frequentistischen Tests nehmen wir eine Nullhypothese als wahr an und prüfe
 
 |                 |$H_0$ is true  |$H_0$ is false |
 |:---------------:|:-------------:|:-------------:|
-|$H_0$ ablehnen   |Richtig        |Fehler 1. Art  |
-|$H_0$ beibehalten|Fehler 2. Art  |Richtig        |
+|$H_0$ ablehnen   |Fehler 1. Art  |Richtig        |
+|$H_0$ beibehalten|Richtig        |Fehler 2. Art  |
 
 </div>
 </center>
@@ -896,7 +946,7 @@ Manchmal stellen Forscher ihre Nullhypothese nicht mit einem konkreten Mittelwer
 Für Einstichprobentests:
 
 \[D = \frac{|\mu - \mu_0|}{\sigma}\]
-\[d = \frac{|\bar{x} - \mu_0|}{s}\]
+\[d_z = \frac{|\bar{x} - \mu_0|}{s}\]
 
 Für Zweistichprobentests:
 
@@ -908,7 +958,7 @@ Interpretation:
 
 <center>
 <div style="width:30%">
-| $d$  | Interpretation   |
+|$d_{(z)}$| Interpretation   |
 |:----:|:----------------:|
 | 0.20 | Klein            |
 | 0.50 | Mittel           |
@@ -961,15 +1011,15 @@ dat <- data.frame(index = NA,
                   M     = NA,
                   sd    = NA,
                   se    = NA,
-                  d     = NA,
+                  d_z   = NA,
                   p     = NA)[-1, ]
 
 # Simulation
 for (i in 1:nsim) {
-  x  <- rnorm(n, mu, sigma)
-  se <- sd(x)/sqrt(n)
-  d  <- mean(x)/sd(x)
-  p  <- t.test(x, mu = mu_0, 
+  x   <- rnorm(n, mu, sigma)
+  se  <- sd(x)/sqrt(n)
+  d_z <- mean(x)/sd(x)
+  p   <- t.test(x, mu = mu_0, 
                alternative = "two.sided", 
                conf.level = 1 - alpha)$p.value
   
@@ -977,7 +1027,7 @@ for (i in 1:nsim) {
                         M     = mean(x),
                         sd    = sd(x),
                         se    = se,
-                        d     = d,
+                        d_z   = d_z,
                         p     = p)
   dat <- rbind(dat, new_dat)
 }
@@ -1023,7 +1073,7 @@ ex_dat
 
 ```
 
-Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
+Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d_z \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
 
 Während es sehr schwierig ist, die Nullhypothese in einem Experiment mit geringer Teststärke zu verwerfen, liefert ein signifikantes Ergebnis eine deutliche Überschätzung des Effekts. Dies erklärt genau, warum das "$p$-Hacking" für die Wissenschaft schädlich ist, bei dem Forscher ein Experiment so lange wiederholen (bzw. die Stichprobengröße jedes Mal erhöhen), bis das Ergebnis signifikant ist, und nur dieses "glänzende" Ergebnis zeigen.
 
@@ -1036,7 +1086,12 @@ Wenn man die Teststärke auf einen bestimmten Wert setzt, kann man mit den einge
 Für unser obiges Beispiel werden beispielsweise 3142 Teilnehmer benötigt, um eine Teststärke von $80\%$ zu erreichen. 
 
 ```{r}
+# Use raw effect
 power.t.test(n = NULL, delta = 0.1, sd = 2, power = .8, sig.level = 0.05,
+             alternative = 'two.sided', type = 'one.sample')
+
+# Use standardised effect size
+power.t.test(n = NULL, delta = 0.05, power = .8, sig.level = 0.05,
              alternative = 'two.sided', type = 'one.sample')
 ```
 
@@ -1338,8 +1393,8 @@ sex_dat <- aggregate(data = dat,
                      health ~ part_id * sex_0,
                      mean)
 
-x <- sex_dat$health[sex_dat$sex_0 == 0]
-y <- sex_dat$health[sex_dat$sex_0 == 1]
+x <- sex_dat$health[sex_dat$sex_0 == 0] # Men
+y <- sex_dat$health[sex_dat$sex_0 == 1] # Women
 
 sem <- function(x) { sd(x)/sqrt(length(x)) }
 
@@ -1348,7 +1403,6 @@ Ms   <- c(mean(x), mean(y))
 SEMs <- c(sem(x), sem(y))
 
 # Barplot
-barplot(Ms)
 par(mar = c(5, 5, 1, 1))
 bx <- barplot(Ms,
               xlim     = c(-0.1, 0.62),
@@ -1364,7 +1418,7 @@ box()
 # Legend
 legend("topright",
        fill   = c("gray85", "gray25"),
-       legend = c("Women", "Men"), 
+       legend = c("Men", "Women"), 
        cex    = 2)
 
 # Error bars
@@ -1388,8 +1442,8 @@ sex_dat <- aggregate(data = dat,
                      health ~ part_id * sex_0,
                      mean)
 
-x <- sex_dat$health[sex_dat$sex_0 == 0]
-y <- sex_dat$health[sex_dat$sex_0 == 1]
+x <- sex_dat$health[sex_dat$sex_0 == 0] # Men 
+y <- sex_dat$health[sex_dat$sex_0 == 1] # Women
 
 sem <- function(x) { sd(x)/sqrt(length(x)) }
 
@@ -1398,9 +1452,8 @@ Ms   <- c(mean(x), mean(y))
 SEMs <- c(sem(x), sem(y))
 
 # Histogram
-breaks <- seq(0, 10, 1/3)
-hist(x)
 par(mar = c(5, 5, 2, 2))
+breaks <- seq(0, 10, 1/3)
 hist(x,
      main     = "Histogram of Health Scores",
      xlab     = "Health Score",
@@ -1420,7 +1473,7 @@ hist(y,
 legend("topright",
        fill   = c(rgb(1, 0, 0, .2), 
                   rgb(0, 0, 1, .2)),
-       legend = c("Women", "Men"), 
+       legend = c("Men", "Women"), 
        cex    = 2)
 ```
 
@@ -1539,7 +1592,7 @@ Ms  <- c(m_A, m_B, m_C)
 sem_A <- sem(x_A)
 sem_B <- sem(x_B)
 sem_C <- sem(x_C)
-SEMs <- c(sem_A, sem_B, sem_C)
+SEMs  <- c(sem_A, sem_B, sem_C)
 
 par(mfrow = c(1, 2))
 
@@ -1572,7 +1625,7 @@ dat <- data.frame(i = factor(rep(1:3, each = 30)),
                   x = c(x_A, x_B, x_C))
 anova_evaluation <- anova(lm(x~i, data = dat))
 F_value <- unlist(anova_evaluation)[7]
-legend("bottom", paste0("F(2, 87) = ", round(F, 2)))
+legend("bottom", paste0("F(2, 87) = ", round(F_value, 2)))
 
 # Mean plot
 Ms <- Ms + c(0, +0.7, -0.7)
@@ -1605,7 +1658,7 @@ dat <- data.frame(i = factor(rep(1:3, each = 30)),
                   x = c(x_A, x_B+0.7, x_C-0.7))
 anova_evaluation <- anova(lm(x~i, data = dat))
 F_value <- unlist(anova_evaluation)[7]
-legend("bottom", paste0("F(2, 87) = ", round(F, 2)))
+legend("bottom", paste0("F(2, 87) = ", round(F_value, 2)))
 
 par(mfrow = c(1, 1))
 
@@ -1797,11 +1850,19 @@ plot(dat$x, dat$y,
      cex      = 2)
 xs <- seq(min(dat$x), max(dat$x), .01)
 
+# Logistic Function curves
 points(xs, logistic(xs, alpha = -8, beta = 0.2), 
        type = "l", lwd = 5, col = "darkgray")
-
 points(xs, logistic(xs, estimated_alpha, estimated_beta), 
        type = "l", lwd = 5)
+
+# Legend
+legend("right", 
+       lty = c(1, 1),
+       lwd = c(5, 5),
+       col = c("darkgray", "black"),
+       legend  = c("True", "Estimated"),
+       cex = 1.5)
 ```
 
 Die Modell Parameter werden wie bei der Regression wieder getestet wie bei einem $t$ Test. Exakterweise, wird dieser Test Wald-Test genannt und man schreibt $z$-Werte, weil die approximative Normalverteilung (statt der $t$-Verteilung) verwendet wird.
@@ -1988,9 +2049,6 @@ print(ezANOVA(data = dat,
               within = manufacturer,
               wid = i))
 ```
-<!-- LL: just in case it is weird for you to add a print here - For ezANOVA, if one doesn't use the print function, there is no useful output in the R console. Alternatively, one can use ezANoVA(...)$ANOVA to extract the results of ANOvA. Since you have written something about the sphericity, I chose to add print() so that all the things can be shown. -->
-
-<!-- LL: because you didn't explain sphericity in the script - if you don't plan to add it, don't forget to explain it verbally :) and perhaps, if someone wants to know more, he could ask something like how should one interpret the result when it is no more significant after correcting -->
 
 > In a repeated measures ANOVA, we found that the health of participants taking prescribed medication depended on the manufacturer, $F(2, 58) = 3.25$, $p = .046$. (There was no violation of sphericity and this effect remained significant after correcting for the marginal deviations from sphericity, $p = .047$.)
 
@@ -2001,8 +2059,8 @@ Den Rest des Kurses verbringen wir damit, eure Datensätze zu betrachten. Wendet
 
 Falls Du keinen eigenen Datensatz hast, an dem Du gerade arbeitest, kannst Du unsere Datensätze verwenden. Diese stammen aus Experimenten, in denen Probanden in jedem Trial Prime und Target Stimuli gesehen haben. Die Stimuli waren Zahlen zwischen 1 und 9, wie in den Spalten `prime` und `target` definiert. Probanden sollten in einer Aufgaben (`om1601_rttask_all.dat`) so schnell wie möglich eine Taste drücken, die anzeigt, ob der Target Stimulus größer oder kleiner als die Zahl 5 war. In einer zweiten Aufgabe (`om1601_perc_all.dat`) sollten sie eine Taste drücken, die anzeigt, ob der Prime Stimulus größer oder kleiner als 5 war — das war wesentlich schwieriger weil der Prime nur für wenige Millisekunden angezeigt wurde, deswegen interessiert uns hier nicht die Reaktionszeit `RT` sondern ob Probanden richtig lagen oder nicht `key_error`.
 
-* Gab es im Reaktionszeitdatensatz einen Effekt von Kongruenz (`congruency`), alsob davon, dass Prime und Target beider größer oder beide kleiner als 5 waren vs. einer kleiner und einer größer?
+* Gab es im Reaktionszeitdatensatz einen Effekt von Kongruenz (`congruency`), also davon, dass Prime und Target beide größer oder beide kleiner als 5 waren vs. einer kleiner und einer größer?
 
 * Konnten Probanden den Prime überzufällig häufig (mehr als 50\%) richtig erkennen?
 
-* Gab einen Unterschied hinsichtlich der Erkennungsrate des Primes, je nach dem was das Target war?
+* Gab einen Unterschied hinsichtlich der Erkennungsrate des Primes, je nachdem was das Target war?
