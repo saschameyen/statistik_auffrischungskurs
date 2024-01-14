@@ -1735,11 +1735,18 @@ x_A <- rnorm(N, mean = +1.2, sd = 2)
 x_B <- rnorm(N, mean = +1.8, sd = 2)
 x_C <- rnorm(N, mean = +0.5, sd = 2)
 
+# mu_1 = 1.2
+# mu_2 = 1.8
+# mu_3 = 0.5
+# epsilon_1 = rnorm(N, mean = 0, sd = 2)
+# x_A = mu_1 + epsilon_1
+
 dat <- data.frame(manufacturer = factor(rep(1:3, each = 30)),
                   health       = c(x_A, x_B, x_C))
 
 # ANOVA
 model <- lm(health ~ manufacturer, data = dat)
+cbind(predict(model), dat$health)
 # cor(predict(model), dat$health)^2 # 0.06
 anova(model)
 
@@ -1907,7 +1914,7 @@ anova(model)
 model1 <- lm(health ~ sex, data = dat)
 model2 <- lm(health ~ sex + medication, data = dat)
 model3 <- lm(health ~ sex * medication, data = dat)
-R2_1 <- cor(predict(model1), dat$health)^2
+R2_1 <- cor(predict(model1), dat$health)^2 # summary(model1)$r.squared
 R2_2 <- cor(predict(model2), dat$health)^2
 R2_3 <- cor(predict(model3), dat$health)^2
 # R2_1        # .04
@@ -1916,8 +1923,6 @@ R2_3 <- cor(predict(model3), dat$health)^2
 
 ```
 
-<!-- LL: 
-although I think maybe you just want to emphasise the relation between the correlation and R^2, here an alternative for R^2 computation `summary(model1)$r.squared` -->
 
 > We found main effects of sex ($F(1, 196) = 8.98$, $p = .003$, $R^2 = .04$) and medication ($F(1, 196) = 15.86$, $p < .001$, $\Delta R^2 = .08$) with the effect of medication depending on the sex of the participants (interaction effect; $F(1, 196) = 9.15$, $p = .003$, $\Delta R^2 = .04$).
 
@@ -2050,7 +2055,7 @@ print(ezANOVA(data = dat,
               wid = i))
 ```
 
-> In a repeated measures ANOVA, we found that the health of participants taking prescribed medication depended on the manufacturer, $F(2, 58) = 3.25$, $p = .046$. (There was no violation of sphericity and this effect remained significant after correcting for the marginal deviations from sphericity, $p = .047$.)
+> In a repeated measures ANOVA, we found that the health of participants taking prescribed medication depended on the manufacturer, $F(2, 58) = 3.25$, $p = .046$, $\eta_{g}^2 = .04$. (There was no violation of sphericity and this effect remained significant after correcting for the marginal deviations from sphericity, $p = .047$.)
 
 
 # Eure Datensätze
