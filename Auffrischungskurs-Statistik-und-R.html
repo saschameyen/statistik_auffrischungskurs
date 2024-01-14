@@ -1650,7 +1650,7 @@ border-radius: 0px;
 <h4 class="author">Dr. Sascha Meyen</h4>
 <address class="author_afil">
 Experimentelle Kognitionswissenschaft | Fachbereich Informatik |
-Universität Tübingen<br><h4 class="date">2024-01-13-22-11</h4>
+Universität Tübingen<br><h4 class="date">2024-01-14-09-41</h4>
 
 </div>
 
@@ -2458,23 +2458,23 @@ oder sie fälschlicherweise beibehalten, obwohl sie falsch ist.</p>
 <thead>
 <tr class="header">
 <th align="center"></th>
-<th align="center"><span class="math inline">\(H_0\)</span> is true</th>
 <th align="center"><span class="math inline">\(H_0\)</span> is
 false</th>
+<th align="center"><span class="math inline">\(H_0\)</span> is true</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="center"><span class="math inline">\(H_0\)</span>
 ablehnen</td>
-<td align="center">Fehler 1. Art</td>
 <td align="center">Richtig</td>
+<td align="center">Fehler 1. Art</td>
 </tr>
 <tr class="even">
 <td align="center"><span class="math inline">\(H_0\)</span>
 beibehalten</td>
-<td align="center">Richtig</td>
 <td align="center">Fehler 2. Art</td>
+<td align="center">Richtig</td>
 </tr>
 </tbody>
 </table>
@@ -2750,7 +2750,7 @@ Mittelwerte, standardisiert mit der Standardabweichung.</p>
 <div style="background-color:#DDDDFF;">
 <p><strong>Cohen’s <span class="math inline">\(d\)</span></strong></p>
 <p>Für Einstichprobentests:</p>
-<p><span class="math display">\[D = \frac{|\mu -
+<p><span class="math display">\[D_z = \frac{|\mu -
 \mu_0|}{\sigma}\]</span> <span class="math display">\[d_z =
 \frac{|\bar{x} - \mu_0|}{s}\]</span></p>
 <p>Für Zweistichprobentests:</p>
@@ -2761,25 +2761,32 @@ Mittelwerte, standardisiert mit der Standardabweichung.</p>
 {n_1+n_2-2} } \right) \]</span></p>
 <p>Interpretation:</p>
 <center>
-<div style="width:30%">
+<div style="width:50%">
 <table>
 <thead>
 <tr class="header">
-<th align="center"><span class="math inline">\(d_{(z)}\)</span></th>
+<th align="center"><span class="math inline">\(d_z\)</span></th>
+<th align="center"><span class="math inline">\(d\)</span></th>
 <th align="center">Interpretation</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="center">0.20</td>
+<td align="center"><span class="math inline">\(\frac{0.20}{\sqrt{2}}
+\approx 0.14\)</span></td>
+<td align="center"><span class="math inline">\(0.20\)</span></td>
 <td align="center">Klein</td>
 </tr>
 <tr class="even">
-<td align="center">0.50</td>
+<td align="center"><span class="math inline">\(\frac{0.50}{\sqrt{2}}
+\approx 0.35\)</span></td>
+<td align="center"><span class="math inline">\(0.50\)</span></td>
 <td align="center">Mittel</td>
 </tr>
 <tr class="odd">
-<td align="center">0.80</td>
+<td align="center"><span class="math inline">\(\frac{0.80}{\sqrt{2}}
+\approx 0.57\)</span></td>
+<td align="center"><span class="math inline">\(0.80\)</span></td>
 <td align="center">Groß</td>
 </tr>
 </tbody>
@@ -2787,9 +2794,9 @@ Mittelwerte, standardisiert mit der Standardabweichung.</p>
 </div>
 </center>
 </div>
-<p>In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel,
-<span class="math inline">\(D = \frac{\mu - \mu_0}{\sigma} = \frac{80 -
-0}{150} \approx 0.53\)</span>.</p>
+<p>In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel
+bis groß, <span class="math inline">\(D_z = \frac{\mu - \mu_0}{\sigma} =
+\frac{80 - 0}{150} \approx 0.53\)</span>.</p>
 </div>
 </div>
 </div>
@@ -2925,7 +2932,7 @@ ist er existent).</p>
 <p>Der beobachtete Effekt in diesem Experiment ist <span class="math inline">\(\bar{x} \approx 0.59\)</span> und der Cohen’s
 <span class="math inline">\(d_z \approx 0.27\)</span>. Wenn man bedenkt,
 dass der wahre Effekt <span class="math inline">\(\mu = 0.1\)</span> und
-die wahre standardisierte Effektgröße <span class="math inline">\(D =
+die wahre standardisierte Effektgröße <span class="math inline">\(D_z =
 0.05\)</span> ist, stellt man fest, dass der beobachtete Effekt etwa
 5-mal so groß ist wie der wahre.</p>
 <p>Während es sehr schwierig ist, die Nullhypothese in einem Experiment

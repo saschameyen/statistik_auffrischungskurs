@@ -704,10 +704,10 @@ Bei frequentistischen Tests nehmen wir eine Nullhypothese als wahr an und prüfe
 <center>
 <div style='width:50%'>
 
-|                 |$H_0$ is true  |$H_0$ is false |
+|                 |$H_0$ is false |$H_0$ is true  |
 |:---------------:|:-------------:|:-------------:|
-|$H_0$ ablehnen   |Fehler 1. Art  |Richtig        |
-|$H_0$ beibehalten|Richtig        |Fehler 2. Art  |
+|$H_0$ ablehnen   |Richtig        |Fehler 1. Art  |
+|$H_0$ beibehalten|Fehler 2. Art  |Richtig        |
 
 </div>
 </center>
@@ -945,7 +945,7 @@ Manchmal stellen Forscher ihre Nullhypothese nicht mit einem konkreten Mittelwer
 
 Für Einstichprobentests:
 
-\[D = \frac{|\mu - \mu_0|}{\sigma}\]
+\[D_z = \frac{|\mu - \mu_0|}{\sigma}\]
 \[d_z = \frac{|\bar{x} - \mu_0|}{s}\]
 
 Für Zweistichprobentests:
@@ -957,18 +957,18 @@ Für Zweistichprobentests:
 Interpretation:
 
 <center>
-<div style="width:30%">
-|$d_{(z)}$| Interpretation   |
-|:----:|:----------------:|
-| 0.20 | Klein            |
-| 0.50 | Mittel           |
-| 0.80 | Groß             |
+<div style="width:50%">
+|               $d_z$                |   $d$  |Interpretation   |
+|:----------------------------------:|:------:|:---------------:|
+|$\frac{0.20}{\sqrt{2}} \approx 0.14$| $0.20$ | Klein           |
+|$\frac{0.50}{\sqrt{2}} \approx 0.35$| $0.50$ | Mittel          |
+|$\frac{0.80}{\sqrt{2}} \approx 0.57$| $0.80$ | Groß            |
 </div>
 </center>
 
 </div>
 
-In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel, $D = \frac{\mu - \mu_0}{\sigma} = \frac{80 - 0}{150} \approx 0.53$.
+In unserem obigen Beispiel ist die Effektgröße beispielsweise mittel bis groß, $D_z = \frac{\mu - \mu_0}{\sigma} = \frac{80 - 0}{150} \approx 0.53$.
 
 
 ## Einflussfaktoren von Teststärke
@@ -1073,7 +1073,7 @@ ex_dat
 
 ```
 
-Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d_z \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
+Der beobachtete Effekt in diesem Experiment ist $\bar{x} \approx 0.59$ und der Cohen's $d_z \approx 0.27$. Wenn man bedenkt, dass der wahre Effekt $\mu = 0.1$ und die wahre standardisierte Effektgröße $D_z = 0.05$ ist, stellt man fest, dass der beobachtete Effekt etwa 5-mal so groß ist wie der wahre. 
 
 Während es sehr schwierig ist, die Nullhypothese in einem Experiment mit geringer Teststärke zu verwerfen, liefert ein signifikantes Ergebnis eine deutliche Überschätzung des Effekts. Dies erklärt genau, warum das "$p$-Hacking" für die Wissenschaft schädlich ist, bei dem Forscher ein Experiment so lange wiederholen (bzw. die Stichprobengröße jedes Mal erhöhen), bis das Ergebnis signifikant ist, und nur dieses "glänzende" Ergebnis zeigen.
 
